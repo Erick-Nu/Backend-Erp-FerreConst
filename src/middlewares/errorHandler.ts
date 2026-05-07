@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
+
 import { logger } from '../utils/logger.js';
 
 const DEFAULT_ERROR_STATUS_CODE = 500;

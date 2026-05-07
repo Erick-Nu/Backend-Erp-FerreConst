@@ -27,7 +27,7 @@ app.use(
   }),
 );
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.status(200).json({
     name: 'esnt-backend-ferreteria',
     version: '1.0.0',

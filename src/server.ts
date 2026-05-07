@@ -1,5 +1,6 @@
 import { app } from './app.js';
 import { env } from './config/env.js';
+import { sql } from './config/database.js';
 import { logger } from './utils/logger.js';
 
 const EXIT_SUCCESS = 0;
@@ -14,16 +15,29 @@ const handleServerStartError = (error: Error): void => {
   process.exit(EXIT_FAILURE);
 };
 
+async function closeDatabaseConnection(): Promise<void> {
+  await sql.end();
+}
+
 const shutdown = (signal: NodeJS.Signals): void => {
   logger.info({ signal }, 'Shutting down server');
 
-  server.close((error) => {
+  server.close(async (error) => {
     if (error) {
       logger.error({ err: error }, 'Error during server shutdown');
       process.exit(EXIT_FAILURE);
     }
 
-    process.exit(EXIT_SUCCESS);
+    try {
+      await closeDatabaseConnection();
+      process.exit(EXIT_SUCCESS);
+    } catch (databaseError) {
+      logger.error(
+        { err: databaseError },
+        'Error closing database connection',
+      );
+      process.exit(EXIT_FAILURE);
+    }
   });
 };
 

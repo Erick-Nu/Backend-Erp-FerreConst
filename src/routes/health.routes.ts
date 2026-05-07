@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-export const healthRouter = Router();
+const healthRouter = Router();
 
 healthRouter.get('/', (_req, res) => {
   res.status(200).json({
@@ -9,3 +9,5 @@ healthRouter.get('/', (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+export { healthRouter };
