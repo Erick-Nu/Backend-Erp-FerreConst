@@ -4,10 +4,11 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import { env } from './config/env.js';
-import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 import { healthRouter } from './routes/health.routes.js';
+import { logger } from './utils/logger.js';
 
-export const app = express();
+const app = express();
 
 app.use(helmet());
 app.use(
@@ -16,10 +17,17 @@ app.use(
   }),
 );
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
+app.use(
+  morgan('combined', {
+    stream: {
+      write: (message) => {
+        logger.info(message.trim());
+      },
+    },
+  }),
+);
 
-app.get('/', (_req, res) => {
+app.get('/', (req, res) => {
   res.status(200).json({
     name: 'esnt-backend-ferreteria',
     version: '1.0.0',
@@ -30,3 +38,5 @@ app.use('/api/health', healthRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+export { app };
