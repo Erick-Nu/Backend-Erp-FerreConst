@@ -43,3 +43,8 @@ pids/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Recursos
+docs/
+uploads/
+db_ferreteria.sql
