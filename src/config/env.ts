@@ -5,8 +5,9 @@ class EnvConfig {
   public readonly port: number;
   public readonly corsOrigin: string;
   public readonly databaseUrl: string;
+  public readonly publicBaseUrl: string;
   public readonly jwtSecret: string;
-  public readonly jwtExpiresIn: string;
+  public readonly jwtExpiresIn: number;
   public readonly bcryptSaltRounds: number;
 
   private readonly errors: string[] = [];
@@ -20,8 +21,9 @@ class EnvConfig {
     this.port = this.getNumberEnv('PORT', true);
     this.corsOrigin = this.getStringEnv('CORS_ORIGIN');
     this.databaseUrl = this.getStringEnv('DATABASE_URL');
+    this.publicBaseUrl = this.getStringEnv('PUBLIC_BASE_URL');
     this.jwtSecret = this.getStringEnv('JWT_SECRET');
-    this.jwtExpiresIn = this.getStringEnv('JWT_EXPIRES_IN');
+    this.jwtExpiresIn = this.getNumberEnv('JWT_EXPIRES_IN');
     this.bcryptSaltRounds = this.getNumberEnv('BCRYPT_SALT_ROUNDS', true);
 
     this.reportErrors();
