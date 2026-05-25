@@ -273,4 +273,3 @@ src/
 ## Notas operativas
 
 - `uploads/` es un recurso local y esta ignorado por git.
-- El endpoint legado `/api/health` no forma parte de la API actual.
