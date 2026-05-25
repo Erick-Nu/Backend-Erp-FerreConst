@@ -7,7 +7,8 @@ class EnvConfig {
   public readonly databaseUrl: string;
   public readonly publicBaseUrl: string;
   public readonly jwtSecret: string;
-  public readonly jwtExpiresIn: number;
+  public readonly accessTokenExpiresIn: string;
+  public readonly refreshTokenExpiresInHours: number;
   public readonly bcryptSaltRounds: number;
 
   private readonly errors: string[] = [];
@@ -23,7 +24,8 @@ class EnvConfig {
     this.databaseUrl = this.getStringEnv('DATABASE_URL');
     this.publicBaseUrl = this.getStringEnv('PUBLIC_BASE_URL');
     this.jwtSecret = this.getStringEnv('JWT_SECRET');
-    this.jwtExpiresIn = this.getNumberEnv('JWT_EXPIRES_IN');
+    this.accessTokenExpiresIn = this.getStringEnv('ACCESS_TOKEN_EXPIRES_IN');
+    this.refreshTokenExpiresInHours = this.getNumberEnv('REFRESH_TOKEN_EXPIRES_IN_HOURS', true);
     this.bcryptSaltRounds = this.getNumberEnv('BCRYPT_SALT_ROUNDS', true);
 
     this.reportErrors();
