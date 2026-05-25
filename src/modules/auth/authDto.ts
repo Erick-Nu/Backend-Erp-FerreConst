@@ -8,6 +8,7 @@ type LoginDto = {
 
 type LoginResponseDto = {
   accessToken: string;
+  refreshToken: string;
   company: {
     emid: string;
     emruc: string;
@@ -28,12 +29,25 @@ type LoginResponseDto = {
   };
 };
 
+type RefreshTokenDto = {
+  refreshToken: string;
+};
+
+type RefreshTokenResponseDto = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 type LoginUserDto = {
   usid: string;
   usemid: string;
   usrol: Role;
-}
+};
 
-
-
-export type { LoginDto, LoginResponseDto, LoginUserDto};
+export type {
+  LoginDto,
+  LoginResponseDto,
+  LoginUserDto,
+  RefreshTokenDto,
+  RefreshTokenResponseDto,
+};
