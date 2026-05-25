@@ -56,6 +56,7 @@ npm run format:check
 
 - Endpoint publico base: `GET /`
 - Login: `POST /auth/login`
+- Refresh de sesion: `POST /auth/refresh`
 - Logout: `POST /auth/logout`
 - El resto de endpoints de negocio usan:
 
@@ -65,6 +66,8 @@ Authorization: Bearer <token>
 
 - El token incluye datos del usuario autenticado (id, empresa, rol).
 - Se validan estados de usuario/empresa segun las reglas de cada modulo.
+- Login entrega `accessToken` y `refreshToken`.
+- Refresh aplica rotacion de refresh token y devuelve un nuevo par de tokens.
 
 ## Convenciones generales de la API
 
@@ -114,10 +117,15 @@ En varios recursos se maneja estado:
 
 ## Resumen de endpoints actuales
 
+### Base
+
+- `GET /`
+
 ### Auth
 
 - `POST /auth/login` inicia sesion con `emruc`, `usapodo`, `uspassword`.
-- `POST /auth/logout` cierra sesion (respuesta informativa).
+- `POST /auth/refresh` renueva sesion con `refreshToken`.
+- `POST /auth/logout` cierra sesion y revoca el `refreshToken`.
 
 ### Companies
 
