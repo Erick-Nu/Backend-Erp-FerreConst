@@ -15,6 +15,7 @@ export default tseslint.config(
       },
     },
     rules: {
+      'preserve-caught-error': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
