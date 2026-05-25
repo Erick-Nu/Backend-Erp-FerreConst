@@ -1,5 +1,6 @@
 import type { Role } from '../config/databaseTypes.js';
 import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 import { env } from '../config/env.js';
 
 type AuthTokenPayload = {
@@ -13,7 +14,7 @@ const MISSING_AUTH_HEADER_MESSAGE = 'Authorization header is required';
 const INVALID_AUTH_HEADER_MESSAGE = 'Authorization header must use Bearer token';
 
 function signAccessToken(payload: AuthTokenPayload): string {
-  const expiresIn = env.jwtExpiresIn;
+  const expiresIn = env.accessTokenExpiresIn as StringValue;
   const secretKey = env.jwtSecret;
   const options: SignOptions = { expiresIn };
   const token = jwt.sign(payload, secretKey, options);
