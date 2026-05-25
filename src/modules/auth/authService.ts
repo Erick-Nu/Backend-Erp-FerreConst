@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 
+import { env } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
 import { signAccessToken } from '../../utils/jwt.js';
 import { verifyPassword } from '../../utils/bcrypt.js';
@@ -27,7 +28,6 @@ const INVALID_CREDENTIALS_MESSAGE = 'Invalid credentials';
 const INACTIVE_USER_MESSAGE = 'User is inactive';
 const INACTIVE_COMPANY_MESSAGE = 'Company is inactive';
 const UNAUTHORIZED_MESSAGE = 'Unauthorized';
-const REFRESH_TOKEN_EXPIRES_IN_HOURS = 24 * 7;
 const HOUR_TO_MILLISECONDS = 60 * 60 * 1000;
 
 type AuthMetadata = {
@@ -54,7 +54,9 @@ function hashRefreshToken(refreshToken: string): string {
 }
 
 function getRefreshTokenExpirationDate(): Date {
-  return new Date(Date.now() + (REFRESH_TOKEN_EXPIRES_IN_HOURS * HOUR_TO_MILLISECONDS));
+  return new Date(
+    Date.now() + (env.refreshTokenExpiresInHours * HOUR_TO_MILLISECONDS),
+  );
 }
 
 function hasRefreshTokenExpired(expirationDate: Date): boolean {
