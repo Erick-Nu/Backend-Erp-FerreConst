@@ -1,7 +1,16 @@
 import type { ProformaStatus } from '../../config/databaseTypes.js';
+import { access } from 'node:fs/promises';
+import { basename, resolve } from 'node:path';
 import { logger } from '../../utils/logger.js';
 import { validateNumber, validateRequiredString } from '../../utils/validation.js';
 import { toPublicImageUrl } from '../../middlewares/uploadImage.js';
+import {
+  buildProformaFileName,
+  buildProformaPdfAbsolutePath,
+  buildProformaPdfRelativePath,
+  generateProformaPdf,
+  type ProformaPdfInput,
+} from '../../utils/pdf/proformaGenerator.js';
 import type { LoginUserDto } from '../auth/authDto.js';
 import { findBranchById } from '../branch/branchDao.js';
 import { findCheckoutByRowId } from '../checkout/checkoutDao.js';
@@ -20,6 +29,7 @@ import {
   replaceCompleteProforma,
   saveProformaHeader,
   saveProformaItem,
+  updateProformaDocumentPathById,
   updateProformaStatusById,
   type ProformaItemRowDao,
   type ProformaRowDao,
@@ -28,6 +38,7 @@ import {
 import type {
   CreateProformaDto,
   FindProformaDto,
+  ProformaPdfResponseDto,
   FindProformasParamsDto,
   FindProformasResponseDto,
   ProformaActionDto,
@@ -90,6 +101,7 @@ const INVALID_STOCK_STATUS_MESSAGE = 'Stock is not active';
 const INVALID_STOCK_QUANTITY_MESSAGE = 'Insufficient stock quantity';
 const BAD_REQUEST_STATUS_CODE = 400;
 const CONFLICT_STATUS_CODE = 409;
+const DEFAULT_PROFORMA_TERMS_MESSAGE = 'Gracias por su preferencia. Esta proforma tiene validez de 15 dias.';
 
 type AccessOptions = {
   targetCompanyId?: string;
@@ -97,6 +109,15 @@ type AccessOptions = {
 
 type ErrorWithStatusCode = Error & {
   statusCode: number;
+};
+
+type ProformaPdfDocumentDto = {
+  docnombre: string | null;
+  docurl: string | null;
+};
+
+type BuildProformaResponseOptions = {
+  regeneratePdf?: boolean;
 };
 
 type ValidatedCreateItem = {
@@ -480,7 +501,182 @@ async function validateInventariableProductsActive(
   }
 }
 
-function mapProformaResponse(proforma: ProformaRowDao, items: ProformaItemRowDao[]): ProformaResponseDto {
+function mapProformaToPdfInput(proforma: ProformaRowDao, items: ProformaItemRowDao[]): ProformaPdfInput {
+  const subtotal = parseNumericValue(proforma.prfmasubtotal ?? 0);
+  const descuento = parseNumericValue(proforma.prfmadescuento);
+  const total = parseNumericValue(proforma.prfmatotal);
+
+  const empresa: ProformaPdfInput['empresa'] = {
+    ruc: proforma.emruc ?? 'N/A',
+    razonSocial: proforma.emrznsocial ?? 'Empresa',
+  };
+
+  if (proforma.emcorreo) {
+    empresa.correo = proforma.emcorreo;
+  }
+
+  const cliente: ProformaPdfInput['cliente'] = {
+    nombre: proforma.clntenombre ?? 'Cliente',
+  };
+
+  if (proforma.clnteidentificacion) {
+    cliente.identificacion = proforma.clnteidentificacion;
+  }
+
+  if (proforma.clntecorreo) {
+    cliente.correo = proforma.clntecorreo;
+  }
+
+  if (proforma.clntedireccion) {
+    cliente.direccion = proforma.clntedireccion;
+  }
+
+  if (proforma.clntetelefono) {
+    cliente.telefono = proforma.clntetelefono;
+  }
+
+  const detalle: ProformaPdfInput['detalle'] = items.map((item) => {
+    const itemPdf: ProformaPdfInput['detalle'][number] = {
+      descripcion: item.dprfmadescripcion,
+      cantidad: parseNumericValue(item.dprfmacantidad),
+      precioUnitario: parseNumericValue(item.dprfmapreciounitario),
+      precioTotal: parseNumericValue(item.dprfmapreciototal),
+    };
+
+    if (item.dprfmacodigo) {
+      itemPdf.codigo = item.dprfmacodigo;
+    }
+
+    return itemPdf;
+  });
+
+  const branding: ProformaPdfInput['branding'] = {
+    termsMessage: DEFAULT_PROFORMA_TERMS_MESSAGE,
+  };
+
+  return {
+    identificador: proforma.prfmaidentificador,
+    fechaEmision: proforma.prfmafchactualizacion ?? proforma.prfmafchregistro ?? new Date(),
+    empresa,
+    cliente,
+    metodoPago: proforma.mpnombre ?? 'No especificado',
+    detalle,
+    totales: {
+      subtotal,
+      descuento,
+      total,
+    },
+    branding,
+    outputFileName: buildProformaFileName(
+      proforma.prfmaidentificador,
+      proforma.prfmafchregistro ?? proforma.prfmafchactualizacion ?? new Date(),
+    ),
+  };
+}
+
+async function resolveStoredProformaPdfDocument(proforma: ProformaRowDao): Promise<ProformaPdfDocumentDto> {
+  if (proforma.prfmadocumento) {
+    const normalizedStoredPath = `/${proforma.prfmadocumento.replaceAll('\\', '/').replace(/^\/+/, '')}`;
+
+    try {
+      await access(resolve(process.cwd(), `.${normalizedStoredPath}`));
+
+      return {
+        docnombre: basename(normalizedStoredPath),
+        docurl: toPublicImageUrl(normalizedStoredPath),
+      };
+    } catch {
+      logger.warn(
+        {
+          proformaId: proforma.prfmaid,
+          companyId: proforma.prfmaemid,
+          storedPath: normalizedStoredPath,
+        },
+        'Stored proforma pdf path does not exist in filesystem',
+      );
+    }
+  }
+
+  const createdAt = proforma.prfmafchregistro ?? proforma.prfmafchactualizacion ?? new Date();
+  const preferredFileName = buildProformaFileName(proforma.prfmaidentificador, createdAt);
+  const legacyFileName = `proforma_${proforma.prfmaid}.pdf`;
+  const companyRuc = proforma.emruc ?? 'N/A';
+  const candidates = [
+    { fileName: preferredFileName, companyRuc },
+    { fileName: preferredFileName },
+    { fileName: legacyFileName },
+  ];
+
+  for (const candidate of candidates) {
+    const absolutePath = buildProformaPdfAbsolutePath(candidate.fileName, candidate.companyRuc);
+
+    try {
+      await access(absolutePath);
+    } catch {
+      continue;
+    }
+
+    const rutaRelativa = buildProformaPdfRelativePath(candidate.fileName, candidate.companyRuc);
+
+    return {
+      docnombre: candidate.fileName,
+      docurl: toPublicImageUrl(rutaRelativa),
+    };
+  }
+
+  return {
+    docnombre: null,
+    docurl: null,
+  };
+}
+
+async function generateProformaPdfDocument(
+  proforma: ProformaRowDao,
+  items: ProformaItemRowDao[],
+): Promise<ProformaPdfDocumentDto> {
+  const pdfInput = mapProformaToPdfInput(proforma, items);
+
+  try {
+    const pdfResult = await generateProformaPdf(pdfInput);
+    const rutaRelativa = buildProformaPdfRelativePath(pdfResult.fileName, proforma.emruc ?? 'N/A');
+    const documentPathSaved = await updateProformaDocumentPathById(
+      {
+        prfmaemid: proforma.prfmaemid,
+        prfmaid: proforma.prfmaid,
+      },
+      rutaRelativa,
+    );
+
+    if (!documentPathSaved) {
+      throw new Error('Proforma document path was not saved');
+    }
+
+    return {
+      docnombre: pdfResult.fileName,
+      docurl: toPublicImageUrl(rutaRelativa),
+    };
+  } catch (error) {
+    logger.error(
+      {
+        err: error,
+        proformaId: proforma.prfmaid,
+        companyId: proforma.prfmaemid,
+      },
+      'Error generating proforma pdf document',
+    );
+
+    return {
+      docnombre: null,
+      docurl: null,
+    };
+  }
+}
+
+function mapProformaResponse(
+  proforma: ProformaRowDao,
+  items: ProformaItemRowDao[],
+  documentoPdf: ProformaPdfDocumentDto,
+): ProformaResponseDto {
   return {
     proforma: {
       prfmaid: proforma.prfmaid,
@@ -543,6 +739,10 @@ function mapProformaResponse(proforma: ProformaRowDao, items: ProformaItemRowDao
         prfmasubtotal: parseNumericValue(proforma.prfmasubtotal ?? 0),
         prfmadescuento: parseNumericValue(proforma.prfmadescuento),
         prfmatotal: parseNumericValue(proforma.prfmatotal),
+      },
+      documento: {
+        docnombre: documentoPdf.docnombre,
+        docurl: documentoPdf.docurl,
       },
     },
   };
@@ -640,7 +840,7 @@ async function createProforma(proforma: CreateProformaDto, user: LoginUserDto): 
       });
     }
 
-    return await buildProformaResponseOrThrow(prfmaemid, proformaId);
+    return await buildProformaResponseOrThrow(prfmaemid, proformaId, { regeneratePdf: true });
   } catch (error) {
     logger.error(
       {
@@ -661,6 +861,7 @@ async function createProforma(proforma: CreateProformaDto, user: LoginUserDto): 
 async function buildProformaResponseOrThrow(
   companyId: string,
   proformaId: string,
+  options: BuildProformaResponseOptions = {},
 ): Promise<ProformaResponseDto> {
   const proformaDB = await findProformaById({
     prfmaemid: companyId,
@@ -676,7 +877,11 @@ async function buildProformaResponseOrThrow(
     prfmaid: proformaId,
   });
 
-  return mapProformaResponse(proformaDB, itemsDB);
+  const documentoPdf = options.regeneratePdf
+    ? await generateProformaPdfDocument(proformaDB, itemsDB)
+    : await resolveStoredProformaPdfDocument(proformaDB);
+
+  return mapProformaResponse(proformaDB, itemsDB, documentoPdf);
 }
 
 async function readProformas(
@@ -737,7 +942,8 @@ async function readProforma(proforma: FindProformaDto, user: LoginUserDto): Prom
       prfmaid,
     });
 
-    return mapProformaResponse(proformaDB, itemsDB);
+    const documentoPdf = await resolveStoredProformaPdfDocument(proformaDB);
+    return mapProformaResponse(proformaDB, itemsDB, documentoPdf);
   } catch (error) {
     logger.error(
       {
@@ -747,6 +953,50 @@ async function readProforma(proforma: FindProformaDto, user: LoginUserDto): Prom
         requesterUserId: user.usid,
       },
       'Error reading proforma',
+    );
+    throw error;
+  }
+}
+
+async function readProformaPdfDocument(
+  proforma: FindProformaDto,
+  user: LoginUserDto,
+): Promise<ProformaPdfResponseDto | null> {
+  const prfmaid = validateRequiredString(proforma.prfmaid, EMPTY_PROFORMA_ID_MESSAGE);
+
+  try {
+    await validateCompanyAndUserAccess(user, { targetCompanyId: user.usemid });
+
+    const proformaDB = await findProformaById({
+      prfmaemid: user.usemid,
+      prfmaid,
+    });
+
+    if (!proformaDB) {
+      return null;
+    }
+
+    const documentoPdf = await resolveStoredProformaPdfDocument(proformaDB);
+
+    return {
+      proforma: {
+        prfmaid: proformaDB.prfmaid,
+        prfmaidentificador: proformaDB.prfmaidentificador,
+        documento: {
+          docnombre: documentoPdf.docnombre,
+          docurl: documentoPdf.docurl,
+        },
+      },
+    };
+  } catch (error) {
+    logger.error(
+      {
+        err: error,
+        companyId: user.usemid,
+        proformaId: prfmaid,
+        requesterUserId: user.usid,
+      },
+      'Error reading proforma pdf document',
     );
     throw error;
   }
@@ -837,7 +1087,7 @@ async function replaceProforma(proforma: ReplaceProformaDto, user: LoginUserDto)
       throw createErrorWithStatusCode(INVALID_PROFORMA_DETAIL_REFERENCE_MESSAGE, CONFLICT_STATUS_CODE);
     }
 
-    return await buildProformaResponseOrThrow(user.usemid, prfmaid);
+    return await buildProformaResponseOrThrow(user.usemid, prfmaid, { regeneratePdf: true });
   } catch (error) {
     logger.error(
       {
@@ -1002,6 +1252,7 @@ export {
   createProforma,
   readProformas,
   readProforma,
+  readProformaPdfDocument,
   replaceProforma,
   payProforma,
   cancelProforma,
