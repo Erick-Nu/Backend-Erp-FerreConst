@@ -12,6 +12,7 @@ import {
   createProforma,
   payProforma,
   readProforma,
+  readProformaPdfDocument,
   readProformas,
   replaceProforma,
 } from './proformaService.js';
@@ -98,6 +99,38 @@ const searchProforma: RequestHandler = async (req, res, next) => {
     }
 
     res.status(200).json(proformaDB);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const searchProformaPdf: RequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (typeof id !== 'string') {
+      res.status(400).json({ message: 'Proforma id is required' });
+      return;
+    }
+
+    const proforma: FindProformaDto = {
+      prfmaid: id,
+    };
+
+    const user: LoginUserDto = req.auth!;
+    const proformaPdfDB = await readProformaPdfDocument(proforma, user);
+
+    if (!proformaPdfDB) {
+      res.status(404).json({ message: 'Proforma not found' });
+      return;
+    }
+
+    if (!proformaPdfDB.proforma.documento.docurl) {
+      res.status(404).json({ message: 'Proforma pdf document not found' });
+      return;
+    }
+
+    res.status(200).json(proformaPdfDB);
   } catch (error) {
     next(error);
   }
@@ -204,6 +237,7 @@ export {
   registerProforma,
   searchProformas,
   searchProforma,
+  searchProformaPdf,
   replaceProformaData,
   payProformaData,
   cancelProformaData,
