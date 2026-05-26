@@ -146,35 +146,20 @@ async function findAuthLoginControlByScope(
   }
 }
 
-const REGISTER_AUTH_LOGIN_FAILURE_QUERY = `
+const SAVE_AUTH_LOGIN_CONTROL_QUERY = `
   insert into authlogincontrol (
     authloginemruc,
     authloginusapodo,
     authloginip,
     authloginintentosfallidos,
+    authloginfchbloqueohasta,
     authloginfchultimointento
   )
-  values ($1, $2, $3, 1, current_timestamp)
+  values ($1, $2, $3, $4, $5, current_timestamp)
   on conflict (authloginemruc, authloginusapodo, authloginip)
   do update
-  set authloginintentosfallidos = case
-        when authlogincontrol.authloginfchbloqueohasta is not null
-          and authlogincontrol.authloginfchbloqueohasta <= current_timestamp
-        then 1
-        else authlogincontrol.authloginintentosfallidos + 1
-      end,
-      authloginfchbloqueohasta = case
-        when (
-          case
-            when authlogincontrol.authloginfchbloqueohasta is not null
-              and authlogincontrol.authloginfchbloqueohasta <= current_timestamp
-            then 1
-            else authlogincontrol.authloginintentosfallidos + 1
-          end
-        ) >= $4
-        then current_timestamp + ($5 * interval '1 minute')
-        else null
-      end,
+  set authloginintentosfallidos = excluded.authloginintentosfallidos,
+      authloginfchbloqueohasta = excluded.authloginfchbloqueohasta,
       authloginfchultimointento = current_timestamp,
       authloginfchactualizacion = current_timestamp
   returning
@@ -189,35 +174,35 @@ const REGISTER_AUTH_LOGIN_FAILURE_QUERY = `
     authloginfchactualizacion
 `;
 
-async function registerAuthLoginFailure(
+async function saveAuthLoginControl(
   scope: AuthLoginControlScopeDao,
-  maxFailedAttempts: number,
-  lockDurationMinutes: number,
+  failedAttempts: number,
+  lockUntil: Date | null,
 ): Promise<AuthLoginControlRow> {
   try {
     const result = await sql.unsafe<AuthLoginControlRow[]>(
-      REGISTER_AUTH_LOGIN_FAILURE_QUERY,
+      SAVE_AUTH_LOGIN_CONTROL_QUERY,
       [
         scope.authloginemruc,
         scope.authloginusapodo,
         scope.authloginip,
-        maxFailedAttempts,
-        lockDurationMinutes,
+        failedAttempts,
+        lockUntil,
       ],
     );
     const controlDB = result[0];
 
     if (!controlDB) {
-      throw new Error('Auth login failure was not registered');
+      throw new Error('Auth login control was not saved');
     }
 
     return controlDB;
   } catch (error) {
     logger.error(
       { err: error, scope },
-      'Error registering auth login failure',
+      'Error saving auth login control',
     );
-    throw new Error('Error registering auth login failure');
+    throw new Error('Error saving auth login control');
   }
 }
 
@@ -381,7 +366,7 @@ async function revokeAuthRefreshTokenByHash(tokenHash: string): Promise<boolean>
 export { findAuthByRucAndNickname };
 export {
   findAuthLoginControlByScope,
-  registerAuthLoginFailure,
+  saveAuthLoginControl,
   resetAuthLoginControl,
   createAuthRefreshToken,
   findAuthRefreshTokenByHash,

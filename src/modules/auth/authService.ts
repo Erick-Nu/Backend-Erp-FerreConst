@@ -17,11 +17,12 @@ import {
   findAuthByRucAndNickname,
   findAuthLoginControlByScope,
   findAuthRefreshTokenByHash,
-  registerAuthLoginFailure,
+  saveAuthLoginControl,
   resetAuthLoginControl,
   revokeAuthRefreshTokenByHash,
   revokeAuthRefreshTokenById,
 } from './authDao.js';
+import type { AuthLoginControlRow, AuthLoginControlScopeDao } from './authDao.js';
 
 const EMPTY_RUC_MESSAGE = 'Company RUC is required';
 const EMPTY_NICKNAME_MESSAGE = 'Nickname is required';
@@ -69,6 +70,47 @@ function hasActiveLoginLock(lockUntil: Date | null): boolean {
   }
 
   return lockUntil.getTime() > Date.now();
+}
+
+function calculateFailedAttemptState(
+  currentControl: AuthLoginControlRow | null,
+): { failedAttempts: number; lockUntil: Date | null } {
+  const now = Date.now();
+  const isExpiredLock = Boolean(
+    currentControl?.authloginfchbloqueohasta
+      && currentControl.authloginfchbloqueohasta.getTime() <= now,
+  );
+
+  const failedAttempts = isExpiredLock
+    ? 1
+    : (currentControl?.authloginintentosfallidos ?? 0) + 1;
+
+  const lockUntil = failedAttempts >= LOGIN_MAX_FAILED_ATTEMPTS
+    ? new Date(now + (LOGIN_LOCK_DURATION_MINUTES * 60 * 1000))
+    : null;
+
+  return {
+    failedAttempts,
+    lockUntil,
+  };
+}
+
+async function handleFailedLoginAttempt(
+  loginControlScope: AuthLoginControlScopeDao,
+  currentControl: AuthLoginControlRow | null,
+): Promise<never> {
+  const failedAttemptState = calculateFailedAttemptState(currentControl);
+  const failedAttempt = await saveAuthLoginControl(
+    loginControlScope,
+    failedAttemptState.failedAttempts,
+    failedAttemptState.lockUntil,
+  );
+
+  if (hasActiveLoginLock(failedAttempt.authloginfchbloqueohasta)) {
+    throw createTooManyRequestsError();
+  }
+
+  throw createUnauthorizedError();
 }
 
 function generateRefreshTokenValue(): string {
@@ -127,16 +169,9 @@ async function login(credentials: LoginDto, metadata: AuthMetadata): Promise<Log
     const authDataDB = await findAuthByRucAndNickname(emruc, usapodo);
 
     if (!authDataDB) {
-      const failedAttempt = await registerAuthLoginFailure(
-        loginControlScope,
-        LOGIN_MAX_FAILED_ATTEMPTS,
-        LOGIN_LOCK_DURATION_MINUTES,
-      );
-
-      if (hasActiveLoginLock(failedAttempt.authloginfchbloqueohasta)) {
-        throw createTooManyRequestsError();
-      }
-
+      await handleFailedLoginAttempt(loginControlScope, loginControl);
+    }
+    if (!authDataDB) {
       throw createUnauthorizedError();
     }
 
@@ -147,17 +182,7 @@ async function login(credentials: LoginDto, metadata: AuthMetadata): Promise<Log
     const verifyPasswordDB = await verifyPassword(uspassword, authDataDB.uspassword);
     
     if (!verifyPasswordDB) {
-      const failedAttempt = await registerAuthLoginFailure(
-        loginControlScope,
-        LOGIN_MAX_FAILED_ATTEMPTS,
-        LOGIN_LOCK_DURATION_MINUTES,
-      );
-
-      if (hasActiveLoginLock(failedAttempt.authloginfchbloqueohasta)) {
-        throw createTooManyRequestsError();
-      }
-
-      throw createUnauthorizedError();
+      await handleFailedLoginAttempt(loginControlScope, loginControl);
     }
 
     if (authDataDB.usestado !== 'activo') {
