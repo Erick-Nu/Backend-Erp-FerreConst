@@ -15,7 +15,10 @@ import type {
 import {
   createAuthRefreshToken,
   findAuthByRucAndNickname,
+  findAuthLoginControlByScope,
   findAuthRefreshTokenByHash,
+  registerAuthLoginFailure,
+  resetAuthLoginControl,
   revokeAuthRefreshTokenByHash,
   revokeAuthRefreshTokenById,
 } from './authDao.js';
@@ -24,11 +27,14 @@ const EMPTY_RUC_MESSAGE = 'Company RUC is required';
 const EMPTY_NICKNAME_MESSAGE = 'Nickname is required';
 const EMPTY_PASSWORD_MESSAGE = 'Password is required';
 const EMPTY_REFRESH_TOKEN_MESSAGE = 'Refresh token is required';
-const INVALID_CREDENTIALS_MESSAGE = 'Invalid credentials';
 const INACTIVE_USER_MESSAGE = 'User is inactive';
 const INACTIVE_COMPANY_MESSAGE = 'Company is inactive';
 const UNAUTHORIZED_MESSAGE = 'Unauthorized';
+const TOO_MANY_REQUESTS_MESSAGE = 'Too many failed login attempts. Try again in 15 minutes';
+const TOO_MANY_REQUESTS_STATUS_CODE = 429;
 const HOUR_TO_MILLISECONDS = 60 * 60 * 1000;
+const LOGIN_MAX_FAILED_ATTEMPTS = 3;
+const LOGIN_LOCK_DURATION_MINUTES = 15;
 
 type AuthMetadata = {
   ip: string | null;
@@ -43,6 +49,26 @@ function createHttpError(message: string, statusCode: number): Error & { statusC
 
 function createUnauthorizedError(): Error & { statusCode: number } {
   return createHttpError(UNAUTHORIZED_MESSAGE, 401);
+}
+
+function createTooManyRequestsError(): Error & { statusCode: number } {
+  return createHttpError(TOO_MANY_REQUESTS_MESSAGE, TOO_MANY_REQUESTS_STATUS_CODE);
+}
+
+function normalizeAuthIp(ip: string | null): string {
+  if (!ip) {
+    return '';
+  }
+
+  return ip;
+}
+
+function hasActiveLoginLock(lockUntil: Date | null): boolean {
+  if (!lockUntil) {
+    return false;
+  }
+
+  return lockUntil.getTime() > Date.now();
 }
 
 function generateRefreshTokenValue(): string {
@@ -84,12 +110,34 @@ async function login(credentials: LoginDto, metadata: AuthMetadata): Promise<Log
   validateRuc(emruc);
   const usapodo = validateRequiredString(credentials.usapodo, EMPTY_NICKNAME_MESSAGE);
   const uspassword = validateRequiredString(credentials.uspassword, EMPTY_PASSWORD_MESSAGE);
+  const authloginip = normalizeAuthIp(metadata.ip);
+  const loginControlScope = {
+    authloginemruc: emruc,
+    authloginusapodo: usapodo,
+    authloginip,
+  };
 
   try {
+    const loginControl = await findAuthLoginControlByScope(loginControlScope);
+
+    if (hasActiveLoginLock(loginControl?.authloginfchbloqueohasta ?? null)) {
+      throw createTooManyRequestsError();
+    }
+
     const authDataDB = await findAuthByRucAndNickname(emruc, usapodo);
 
     if (!authDataDB) {
-      throw new Error(INVALID_CREDENTIALS_MESSAGE);
+      const failedAttempt = await registerAuthLoginFailure(
+        loginControlScope,
+        LOGIN_MAX_FAILED_ATTEMPTS,
+        LOGIN_LOCK_DURATION_MINUTES,
+      );
+
+      if (hasActiveLoginLock(failedAttempt.authloginfchbloqueohasta)) {
+        throw createTooManyRequestsError();
+      }
+
+      throw createUnauthorizedError();
     }
 
     if (authDataDB.emestado !== 'activo'){
@@ -99,12 +147,24 @@ async function login(credentials: LoginDto, metadata: AuthMetadata): Promise<Log
     const verifyPasswordDB = await verifyPassword(uspassword, authDataDB.uspassword);
     
     if (!verifyPasswordDB) {
-      throw new Error(INVALID_CREDENTIALS_MESSAGE);
+      const failedAttempt = await registerAuthLoginFailure(
+        loginControlScope,
+        LOGIN_MAX_FAILED_ATTEMPTS,
+        LOGIN_LOCK_DURATION_MINUTES,
+      );
+
+      if (hasActiveLoginLock(failedAttempt.authloginfchbloqueohasta)) {
+        throw createTooManyRequestsError();
+      }
+
+      throw createUnauthorizedError();
     }
 
     if (authDataDB.usestado !== 'activo') {
       throw new Error(INACTIVE_USER_MESSAGE);
     }
+
+    await resetAuthLoginControl(loginControlScope);
 
     const userToken = signAccessToken({
       usid: authDataDB.usid,

@@ -45,6 +45,24 @@ type AuthRefreshTokenRow = {
   emestado: Status;
 };
 
+type AuthLoginControlScopeDao = {
+  authloginemruc: string;
+  authloginusapodo: string;
+  authloginip: string;
+};
+
+type AuthLoginControlRow = {
+  authloginid: string;
+  authloginemruc: string;
+  authloginusapodo: string;
+  authloginip: string;
+  authloginintentosfallidos: number;
+  authloginfchbloqueohasta: Date | null;
+  authloginfchultimointento: Date | null;
+  authloginfchcreacion: Date;
+  authloginfchactualizacion: Date;
+};
+
 const FIND_AUTH_BY_RUC_AND_NICKNAME_QUERY = `
   select
     u.usid,
@@ -83,6 +101,157 @@ async function findAuthByRucAndNickname(ruc: string, nickname: string): Promise<
       'Error finding auth data by ruc and nickname',
     );
     throw new Error('Error finding auth data');
+  }
+}
+
+const FIND_AUTH_LOGIN_CONTROL_BY_SCOPE_QUERY = `
+  select
+    authloginid,
+    authloginemruc,
+    authloginusapodo,
+    authloginip,
+    authloginintentosfallidos,
+    authloginfchbloqueohasta,
+    authloginfchultimointento,
+    authloginfchcreacion,
+    authloginfchactualizacion
+  from authlogincontrol
+  where authloginemruc = $1
+    and authloginusapodo = $2
+    and authloginip = $3
+  limit 1
+`;
+
+async function findAuthLoginControlByScope(
+  scope: AuthLoginControlScopeDao,
+): Promise<AuthLoginControlRow | null> {
+  try {
+    const result = await sql.unsafe<AuthLoginControlRow[]>(
+      FIND_AUTH_LOGIN_CONTROL_BY_SCOPE_QUERY,
+      [scope.authloginemruc, scope.authloginusapodo, scope.authloginip],
+    );
+    const controlDB = result[0];
+
+    if (!controlDB) {
+      return null;
+    }
+
+    return controlDB;
+  } catch (error) {
+    logger.error(
+      { err: error, scope },
+      'Error finding auth login control by scope',
+    );
+    throw new Error('Error finding auth login control by scope');
+  }
+}
+
+const REGISTER_AUTH_LOGIN_FAILURE_QUERY = `
+  insert into authlogincontrol (
+    authloginemruc,
+    authloginusapodo,
+    authloginip,
+    authloginintentosfallidos,
+    authloginfchultimointento
+  )
+  values ($1, $2, $3, 1, current_timestamp)
+  on conflict (authloginemruc, authloginusapodo, authloginip)
+  do update
+  set authloginintentosfallidos = case
+        when authlogincontrol.authloginfchbloqueohasta is not null
+          and authlogincontrol.authloginfchbloqueohasta <= current_timestamp
+        then 1
+        else authlogincontrol.authloginintentosfallidos + 1
+      end,
+      authloginfchbloqueohasta = case
+        when (
+          case
+            when authlogincontrol.authloginfchbloqueohasta is not null
+              and authlogincontrol.authloginfchbloqueohasta <= current_timestamp
+            then 1
+            else authlogincontrol.authloginintentosfallidos + 1
+          end
+        ) >= $4
+        then current_timestamp + ($5 * interval '1 minute')
+        else null
+      end,
+      authloginfchultimointento = current_timestamp,
+      authloginfchactualizacion = current_timestamp
+  returning
+    authloginid,
+    authloginemruc,
+    authloginusapodo,
+    authloginip,
+    authloginintentosfallidos,
+    authloginfchbloqueohasta,
+    authloginfchultimointento,
+    authloginfchcreacion,
+    authloginfchactualizacion
+`;
+
+async function registerAuthLoginFailure(
+  scope: AuthLoginControlScopeDao,
+  maxFailedAttempts: number,
+  lockDurationMinutes: number,
+): Promise<AuthLoginControlRow> {
+  try {
+    const result = await sql.unsafe<AuthLoginControlRow[]>(
+      REGISTER_AUTH_LOGIN_FAILURE_QUERY,
+      [
+        scope.authloginemruc,
+        scope.authloginusapodo,
+        scope.authloginip,
+        maxFailedAttempts,
+        lockDurationMinutes,
+      ],
+    );
+    const controlDB = result[0];
+
+    if (!controlDB) {
+      throw new Error('Auth login failure was not registered');
+    }
+
+    return controlDB;
+  } catch (error) {
+    logger.error(
+      { err: error, scope },
+      'Error registering auth login failure',
+    );
+    throw new Error('Error registering auth login failure');
+  }
+}
+
+const RESET_AUTH_LOGIN_CONTROL_QUERY = `
+  update authlogincontrol
+  set authloginintentosfallidos = 0,
+      authloginfchbloqueohasta = null,
+      authloginfchultimointento = null,
+      authloginfchactualizacion = current_timestamp
+  where authloginemruc = $1
+    and authloginusapodo = $2
+    and authloginip = $3
+  returning authloginid
+`;
+
+async function resetAuthLoginControl(scope: AuthLoginControlScopeDao): Promise<boolean> {
+  try {
+    const result = await sql.unsafe<{ authloginid: string }[]>(
+      RESET_AUTH_LOGIN_CONTROL_QUERY,
+      [scope.authloginemruc, scope.authloginusapodo, scope.authloginip],
+    );
+    const controlDB = result[0];
+
+    if (!controlDB) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logger.error(
+      { err: error, scope },
+      'Error resetting auth login control',
+    );
+    throw new Error('Error resetting auth login control');
   }
 }
 
@@ -211,6 +380,9 @@ async function revokeAuthRefreshTokenByHash(tokenHash: string): Promise<boolean>
 
 export { findAuthByRucAndNickname };
 export {
+  findAuthLoginControlByScope,
+  registerAuthLoginFailure,
+  resetAuthLoginControl,
   createAuthRefreshToken,
   findAuthRefreshTokenByHash,
   revokeAuthRefreshTokenById,
@@ -218,6 +390,8 @@ export {
 };
 export type {
   AuthLoginRow,
+  AuthLoginControlRow,
+  AuthLoginControlScopeDao,
   AuthRefreshTokenRow,
   CreateAuthRefreshTokenDao,
 };
