@@ -5,6 +5,7 @@ import morgan from 'morgan';
 
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
+import { createRateLimit } from './middlewares/rateLimit.js';
 import { authRouter } from './modules/auth/authRoute.js';
 import { userRouter } from './modules/user/userRoute.js';
 import { companyRouter } from './modules/company/companyRoute.js';
@@ -22,6 +23,23 @@ import { proformaRouter } from './modules/proforma/proformaRoute.js';
 import { logger } from './utils/logger.js';
 
 const app: express.Express = express();
+const authRateLimit = createRateLimit({
+  maxRequests: 10,
+  windowMs: 60_000,
+});
+const writeRateLimit = createRateLimit({
+  maxRequests: 60,
+  windowMs: 60_000,
+});
+const readRateLimit = createRateLimit({
+  maxRequests: 120,
+  windowMs: 60_000,
+});
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+function isAuthRequest(path: string): boolean {
+  return path === '/auth' || path.startsWith('/auth/');
+}
 
 app.use(helmet());
 app.use(
@@ -40,6 +58,40 @@ app.use(
     },
   }),
 );
+app.use((req, res, next) => {
+  if (isAuthRequest(req.path)) {
+    authRateLimit(req, res, next);
+    return;
+  }
+
+  next();
+});
+app.use((req, res, next) => {
+  if (isAuthRequest(req.path)) {
+    next();
+    return;
+  }
+
+  if (WRITE_METHODS.has(req.method)) {
+    writeRateLimit(req, res, next);
+    return;
+  }
+
+  next();
+});
+app.use((req, res, next) => {
+  if (isAuthRequest(req.path)) {
+    next();
+    return;
+  }
+
+  if (req.method === 'GET') {
+    readRateLimit(req, res, next);
+    return;
+  }
+
+  next();
+});
 
 app.get('/', (_req, res) => {
   res.status(200).json({
