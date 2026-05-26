@@ -242,6 +242,7 @@ Notas:
 - `POST /proformas`
 - `GET /proformas`
 - `GET /proformas/:id`
+- `GET /proformas/:id/pdf`
 - `PUT /proformas/:id`
 - `PATCH /proformas/:id/pay`
 - `PATCH /proformas/:id/cancel`
@@ -249,7 +250,18 @@ Notas:
 Notas:
 - `POST` y `PUT` validan consistencia de subtotal/descuento/total y detalle.
 - `PUT /proformas/:id` reemplaza cabecera + detalle de forma atomica.
-- La respuesta de proforma incluye documento completo (emisor, receptor, detalle, totales, estado y metadata).
+- Al crear o actualizar una proforma se genera el PDF y se persiste su ruta en `prfmadocumento`.
+- `GET /proformas/:id/pdf` busca el documento registrado y responde `404` si la proforma no existe o si el PDF no esta disponible.
+- Las respuestas usan el objeto `documento` con esta estructura:
+
+```json
+{
+  "documento": {
+    "docnombre": "CODIGO-SUCU-CAJA-0001_2026-05-26.pdf",
+    "docurl": "https://api.tu-dominio.com/uploads/proformas/0999999999001/CODIGO-SUCU-CAJA-0001_2026-05-26.pdf"
+  }
+}
+```
 
 ## Estructura principal del proyecto
 
