@@ -110,6 +110,10 @@ type ProformaResponseDto = {
       prfmadescuento: number;
       prfmatotal: number;
     };
+    documento: {
+      docnombre: string | null;
+      docurl: string | null;
+    };
   };
 };
 
@@ -119,6 +123,17 @@ type FindProformasResponseDto = {
   pageSize: number;
   totalItems: number;
   totalPages: number;
+};
+
+type ProformaPdfResponseDto = {
+  proforma: {
+    prfmaid: string;
+    prfmaidentificador: string;
+    documento: {
+      docnombre: string | null;
+      docurl: string | null;
+    };
+  };
 };
 
 export type {
@@ -132,4 +147,5 @@ export type {
   ProformaItemResponseDto,
   ProformaResponseDto,
   FindProformasResponseDto,
+  ProformaPdfResponseDto,
 };
