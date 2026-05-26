@@ -67,6 +67,7 @@ type ProformaRowDao = {
   prfmaclnteid: string;
   prfmampid: string;
   prfmaidentificador: string;
+  prfmadocumento?: string | null;
   prfmasubtotal: number | string;
   prfmadescuento: number | string;
   prfmatotal: number | string;
@@ -234,6 +235,7 @@ const FIND_PROFORMA_BY_ID_QUERY = `
     p.prfmampid,
     p.prfmaclnteid,
     p.prfmaidentificador,
+    p.prfmadocumento,
     p.prfmasubtotal,
     p.prfmadescuento,
     p.prfmatotal,
@@ -411,18 +413,67 @@ async function findProformaItems(
   }
 }
 
+const REPLACE_PROFORMA_HEADER_FOR_UPDATE_QUERY = `
+  select prfmaestado
+  from proforma
+  where prfmaid = $1 and prfmaemid = $2
+  for update
+`;
+
+const REPLACE_PROFORMA_DETAILS_FOR_UPDATE_QUERY = `
+  select dprfmaid
+  from detalleprfma
+  where dprfmaprfmaid = $1
+  for update
+`;
+
+const INSERT_REPLACE_PROFORMA_DETAIL_QUERY = `
+  insert into detalleprfma (
+    dprfmaprfmaid,
+    dprfmaesinventariable,
+    dprfmacodigo,
+    dprfmadescripcion,
+    dprfmacantidad,
+    dprfmapreciounitario,
+    dprfmapreciototal
+  )
+  values ($1, $2, $3, $4, $5, $6, $7)
+`;
+
+const UPDATE_REPLACE_PROFORMA_DETAIL_QUERY = `
+  update detalleprfma
+  set dprfmaesinventariable = $1,
+      dprfmacodigo = $2,
+      dprfmadescripcion = $3,
+      dprfmacantidad = $4,
+      dprfmapreciounitario = $5,
+      dprfmapreciototal = $6
+  where dprfmaid = $7 and dprfmaprfmaid = $8
+`;
+
+const DELETE_REPLACE_PROFORMA_DETAIL_QUERY = `
+  delete from detalleprfma
+  where dprfmaid = $1 and dprfmaprfmaid = $2
+`;
+
+const UPDATE_REPLACE_PROFORMA_HEADER_QUERY = `
+  update proforma
+  set prfmaclnteid = $1,
+      prfmampid = $2,
+      prfmasubtotal = $3,
+      prfmadescuento = $4,
+      prfmatotal = $5,
+      prfmafchactualizacion = current_timestamp
+  where prfmaid = $6 and prfmaemid = $7
+`;
+
 async function replaceCompleteProforma(
   proforma: ReplaceCompleteProformaDao,
 ): Promise<ReplaceCompleteProformaResult> {
   try {
     return await sql.begin(async (transaction): Promise<ReplaceCompleteProformaResult> => {
       const headerRows = await transaction.unsafe<{ prfmaestado: ProformaStatus }[]>(
-        `
-          select prfmaestado
-          from proforma
-          where prfmaid = $1 and prfmaemid = $2
-          for update
-        `,
+        REPLACE_PROFORMA_HEADER_FOR_UPDATE_QUERY,
         [proforma.prfmaid, proforma.prfmaemid],
       );
       const header = headerRows[0];
@@ -436,12 +487,7 @@ async function replaceCompleteProforma(
       }
 
       const detailRows = await transaction.unsafe<{ dprfmaid: string }[]>(
-        `
-          select dprfmaid
-          from detalleprfma
-          where dprfmaprfmaid = $1
-          for update
-        `,
+        REPLACE_PROFORMA_DETAILS_FOR_UPDATE_QUERY,
         [proforma.prfmaid],
       );
       const existingDetailIds = new Set(detailRows.map((item) => item.dprfmaid));
@@ -460,18 +506,7 @@ async function replaceCompleteProforma(
       for (const item of proforma.items) {
         if (item.dprfmaid === undefined) {
           await transaction.unsafe(
-            `
-              insert into detalleprfma (
-                dprfmaprfmaid,
-                dprfmaesinventariable,
-                dprfmacodigo,
-                dprfmadescripcion,
-                dprfmacantidad,
-                dprfmapreciounitario,
-                dprfmapreciototal
-              )
-              values ($1, $2, $3, $4, $5, $6, $7)
-            `,
+            INSERT_REPLACE_PROFORMA_DETAIL_QUERY,
             [
               proforma.prfmaid,
               item.dprfmaesinventariable,
@@ -486,16 +521,7 @@ async function replaceCompleteProforma(
         }
 
         await transaction.unsafe(
-          `
-            update detalleprfma
-            set dprfmaesinventariable = $1,
-                dprfmacodigo = $2,
-                dprfmadescripcion = $3,
-                dprfmacantidad = $4,
-                dprfmapreciounitario = $5,
-                dprfmapreciototal = $6
-            where dprfmaid = $7 and dprfmaprfmaid = $8
-          `,
+          UPDATE_REPLACE_PROFORMA_DETAIL_QUERY,
           [
             item.dprfmaesinventariable,
             item.dprfmacodigo,
@@ -512,26 +538,14 @@ async function replaceCompleteProforma(
       for (const detail of detailRows) {
         if (!retainedDetailIds.has(detail.dprfmaid)) {
           await transaction.unsafe(
-            `
-              delete from detalleprfma
-              where dprfmaid = $1 and dprfmaprfmaid = $2
-            `,
+            DELETE_REPLACE_PROFORMA_DETAIL_QUERY,
             [detail.dprfmaid, proforma.prfmaid],
           );
         }
       }
 
       await transaction.unsafe(
-        `
-          update proforma
-          set prfmaclnteid = $1,
-              prfmampid = $2,
-              prfmasubtotal = $3,
-              prfmadescuento = $4,
-              prfmatotal = $5,
-              prfmafchactualizacion = current_timestamp
-          where prfmaid = $6 and prfmaemid = $7
-        `,
+        UPDATE_REPLACE_PROFORMA_HEADER_QUERY,
         [
           proforma.prfmaclnteid,
           proforma.prfmampid,
@@ -605,19 +619,21 @@ async function findProformaHeaderForUpdate(
   }
 }
 
+const UPDATE_PROFORMA_STATUS_BY_ID_QUERY = `
+  update proforma
+  set prfmaestado = $1,
+      prfmafchactualizacion = current_timestamp
+  where prfmaid = $2 and prfmaemid = $3
+  returning prfmaid
+`;
+
 async function updateProformaStatusById(
   proforma: FindProformaByIdDao,
   status: ProformaStatus
 ): Promise<boolean> {
   try {
     const result = await sql.unsafe<{ prfmaid: string }[]>(
-      `
-        update proforma
-        set prfmaestado = $1,
-            prfmafchactualizacion = current_timestamp
-        where prfmaid = $2 and prfmaemid = $3
-        returning prfmaid
-      `,
+      UPDATE_PROFORMA_STATUS_BY_ID_QUERY,
       [status, proforma.prfmaid, proforma.prfmaemid],
     );
 
@@ -641,6 +657,44 @@ async function updateProformaStatusById(
   }
 }
 
+const UPDATE_PROFORMA_DOCUMENT_PATH_BY_ID_QUERY = `
+  update proforma
+  set prfmadocumento = $1,
+      prfmafchactualizacion = current_timestamp
+  where prfmaid = $2 and prfmaemid = $3
+  returning prfmaid
+`;
+
+async function updateProformaDocumentPathById(
+  proforma: FindProformaByIdDao,
+  documentPath: string,
+): Promise<boolean> {
+  try {
+    const result = await sql.unsafe<{ prfmaid: string }[]>(
+      UPDATE_PROFORMA_DOCUMENT_PATH_BY_ID_QUERY,
+      [documentPath, proforma.prfmaid, proforma.prfmaemid],
+    );
+
+    const updated = result[0];
+    if (!updated) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logger.error(
+      {
+        err: error,
+        companyId: proforma.prfmaemid,
+        proformaId: proforma.prfmaid,
+        documentPath,
+      },
+      'Error updating proforma document path by id',
+    );
+    throw new Error('Error updating proforma document path by id');
+  }
+}
+
 export {
   saveProformaHeader,
   saveProformaItem,
@@ -650,6 +704,7 @@ export {
   replaceCompleteProforma,
   findProformaHeaderForUpdate,
   updateProformaStatusById,
+  updateProformaDocumentPathById,
 };
 
 export type {
