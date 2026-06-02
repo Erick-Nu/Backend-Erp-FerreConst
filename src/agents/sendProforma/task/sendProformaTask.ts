@@ -1,6 +1,5 @@
 import { access, readFile } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
-import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import type { Transporter } from 'nodemailer';
 import { env } from '../../../config/env.js';
@@ -25,7 +24,7 @@ const SEND_PROFORMA_COMPANY_RUC_SEPARATOR = ';';
 const SEND_PROFORMA_EMAIL_TEMPLATE_PATH = 'uploads/templates/send-proforma-email.html';
 const SEND_PROFORMA_PER_COMPANY_LIMIT = 10;
 const SEND_PROFORMA_TOTAL_BATCH_LIMIT = 50;
-const EMPTY_BATCH_POLL_INTERVAL_MS = 120000;
+const AGENT_POLL_INTERVAL_MS = 10000;
 const transporterByCompanyId: Record<string, Transporter> = {};
 let sendProformaEmailTemplate: string | null = null;
 
@@ -318,27 +317,53 @@ async function runSendProformaIteration(): Promise<void> {
 
 async function startSendProformaAgent(): Promise<void> {
   let isRunning = true;
+  let intervalId: NodeJS.Timeout | null = null;
 
   const handleSignal = (signal: NodeJS.Signals): void => {
     logger.info('[SendProformaTask] Señal recibida: ' + signal);
     isRunning = false;
+
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
   };
 
   process.on('SIGINT', handleSignal);
   process.on('SIGTERM', handleSignal);
 
-  logger.info('[SendProformaTask] Iniciando agente de envío de proformas');
+  logger.info('Agente asíncrono iniciado');
 
   try {
-    while (isRunning) {
-      logger.info('[SendProformaTask] Ejecutando iteración del agente');
-      await runSendProformaIteration();
+    logger.info('[SendProformaTask] Ejecutando iteración inicial del agente');
+    await runSendProformaIteration();
 
-      if (isRunning) {
-        await delay(EMPTY_BATCH_POLL_INTERVAL_MS);
+    intervalId = setInterval(async () => {
+      if (!isRunning) {
+        return;
       }
-    }
+
+      try {
+        logger.info('[SendProformaTask] Ejecutando iteración programada del agente');
+        await runSendProformaIteration();
+      } catch (error) {
+        logger.error({ err: error }, 'Error en el ciclo del agente');
+      }
+    }, AGENT_POLL_INTERVAL_MS);
+
+    await new Promise<void>((resolvePromise) => {
+      const waitForStop = setInterval(() => {
+        if (!isRunning) {
+          clearInterval(waitForStop);
+          resolvePromise();
+        }
+      }, 250);
+    });
   } finally {
+    if (intervalId) {
+      clearInterval(intervalId);
+    }
+
     process.off('SIGINT', handleSignal);
     process.off('SIGTERM', handleSignal);
     logger.info('[SendProformaTask] Agente de envío de proformas detenido');
