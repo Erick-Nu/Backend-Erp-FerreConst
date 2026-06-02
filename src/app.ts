@@ -20,6 +20,7 @@ import { stockRouter } from './modules/stock/stockRoute.js';
 import { clientRouter } from './modules/client/clientRoute.js';
 import { playmentMethodRouter } from './modules/playmentMethod/playmentMethodRoute.js';
 import { proformaRouter } from './modules/proforma/proformaRoute.js';
+import { configRouter } from './modules/config/configRoute.js';
 import { logger } from './utils/logger.js';
 
 const app: express.Express = express();
@@ -114,6 +115,7 @@ app.use('/stocks', stockRouter);
 app.use('/clients', clientRouter);
 app.use('/playment-methods', playmentMethodRouter);
 app.use('/proformas', proformaRouter);
+app.use('/configs', configRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
