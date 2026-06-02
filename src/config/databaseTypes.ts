@@ -6,4 +6,6 @@ type ProformaStatus = 'emitida' | 'pagada' | 'anulada';
 
 type Identification = 'cedula' | 'ruc';
 
-export type { Identification, ProformaStatus, Role, Status };
+type SendStatus = 'pendiente' | 'procesando' | 'completado' | 'fallido';
+
+export type { Identification, ProformaStatus, Role, SendStatus, Status };
