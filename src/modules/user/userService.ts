@@ -13,6 +13,7 @@ import type {
   FindUsersParamsDto,
   FindUsersResponseDto,
   UpdateUserDto,
+  UpdateUserPasswordDto,
   UpdateStatusUserDto,
   UserResponseDto,
 } from './userDto.js';
@@ -484,4 +485,60 @@ async function updateUser(userData: UpdateUserDto, user: LoginUserDto): Promise<
   }
 }
 
-export { createUser, readUsers, readUser, updateUserWithStatus, updateUser };
+async function updateUserPassword(userData: UpdateUserPasswordDto, user: LoginUserDto): Promise<boolean> {
+  const usid = validateRequiredString(userData.usid, EMPTY_USER_ID_MESSAGE);
+  const uspassword = validatePassword(userData.uspassword, EMPTY_PASSWORD_MESSAGE, INVALID_PASSWORD_MESSAGE);
+
+  try {
+    const access = {
+      requireParentCompany: false,
+      requireAdminUser: false,
+      targetCompanyId: user.usemid,
+    };
+
+    await validateCompanyAndUserAccess(user, access);
+
+    const requesterUser = await findUserById({
+      usid: user.usid,
+      usemid: user.usemid,
+    });
+
+    if (!requesterUser) {
+      throw new Error(INVALID_USER_NOT_FOUND_MESSAGE);
+    }
+
+    if (requesterUser.usrol !== 'jefe') {
+      throw new Error(FORBIDDEN_ROLE_USER_JEFE_MESSAGE);
+    }
+
+    const targetUser = await findUserById({
+      usid,
+      usemid: user.usemid,
+    });
+
+    if (!targetUser) {
+      return false;
+    }
+
+    const passwordHash = await encryptPassword(uspassword);
+    const updatedUserDB = await updateUserById(
+      [{ column: 'uspassword', value: passwordHash }],
+      { usid, usemid: user.usemid },
+    );
+
+    return updatedUserDB !== null;
+  } catch (error) {
+    logger.error(
+      {
+        err: error,
+        userId: usid,
+        requesterUserId: user.usid,
+        requesterCompanyId: user.usemid,
+      },
+      'Error updating user password',
+    );
+    throw error;
+  }
+}
+
+export { createUser, readUsers, readUser, updateUserWithStatus, updateUser, updateUserPassword };

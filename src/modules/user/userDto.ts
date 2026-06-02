@@ -28,6 +28,11 @@ type UpdateUserDto = {
   usrol?: Role;
 }
 
+type UpdateUserPasswordDto = {
+  usid: string;
+  uspassword: string;
+}
+
 type FindUsersParamsDto = {
   page: number;
   pageSize: number;
@@ -60,6 +65,7 @@ export type {
   UserResponseDto,
   FindUserDto,
   UpdateUserDto,
+  UpdateUserPasswordDto,
   UpdateStatusUserDto,
   FindUsersParamsDto,
   FindUsersResponseDto
