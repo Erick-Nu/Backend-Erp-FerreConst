@@ -1,6 +1,5 @@
 import { access, readFile } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { Transporter } from 'nodemailer';
 import { env } from '../../../config/env.js';
 import { createTransporter, sendEmail } from '../../../services/nodemailer.js';
@@ -372,11 +371,7 @@ async function startSendProformaAgent(): Promise<void> {
 
 export { processSendProformaBatch, startSendProformaAgent };
 
-const isMain = fileURLToPath(import.meta.url) === process.argv[1];
-
-if (isMain) {
-  startSendProformaAgent().catch((error) => {
-    logger.error({ err: error }, 'Send proforma agent failed');
-    process.exit(1);
-  });
-}
+startSendProformaAgent().catch((error) => {
+  logger.error({ err: error }, 'Send proforma agent failed');
+  process.exit(1);
+});
