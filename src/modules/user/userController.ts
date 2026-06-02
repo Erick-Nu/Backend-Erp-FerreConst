@@ -10,10 +10,18 @@ import type {
   CreateUserDto,
   FindUserDto,
   FindUsersParamsDto,
+  UpdateUserPasswordDto,
   UpdateStatusUserDto,
   UpdateUserDto,
 } from './userDto.js';
-import { createUser, readUser, readUsers, updateUser, updateUserWithStatus } from './userService.js';
+import {
+  createUser,
+  readUser,
+  readUsers,
+  updateUser,
+  updateUserPassword,
+  updateUserWithStatus,
+} from './userService.js';
 
 const USER_IMAGE_BASE_PATH = '/usuarios';
 const DEFAULT_USER_IMAGE_PUBLIC_PATH = '/uploads/usuarios/user.png';
@@ -21,6 +29,7 @@ const DEFAULT_USER_IMAGE_PUBLIC_PATH = '/uploads/usuarios/user.png';
 type CreateUserRequestBody = Omit<CreateUserDto, 'usimagen'>;
 
 type UpdateUserRequestBody = Omit<UpdateUserDto, 'usid' | 'usimagen'>;
+type UpdateUserPasswordRequestBody = Pick<UpdateUserPasswordDto, 'uspassword'>;
 
 
 const registerUser: RequestHandler = async (req, res, next) => {
@@ -184,4 +193,40 @@ const updateUserData: RequestHandler = async (req, res, next) => {
   }
 };
 
-export { registerUser, searchUsers, searchUser, updateUserStatus, updateUserData };
+const updateUserPasswordData: RequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { uspassword } = req.body as UpdateUserPasswordRequestBody;
+
+    if (typeof id !== 'string') {
+      res.status(400).json({ message: 'User id is required' });
+      return;
+    }
+
+    const userData: UpdateUserPasswordDto = {
+      usid: id,
+      uspassword,
+    };
+
+    const user: LoginUserDto = req.auth!;
+    const updated = await updateUserPassword(userData, user);
+
+    if (!updated) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'User password updated' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export {
+  registerUser,
+  searchUsers,
+  searchUser,
+  updateUserStatus,
+  updateUserData,
+  updateUserPasswordData,
+};
