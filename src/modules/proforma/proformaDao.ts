@@ -125,6 +125,22 @@ type FindProformasResponseDao = {
   totalPages: number;
 };
 
+type CreateSendProformaTaskDao = {
+  sendemid: string;
+  sendprfmaid: string;
+  sendprfmaidentificador: string;
+  sendprfmadocumento: string;
+  sendemruc: string;
+  sendemrznsocial: string;
+  sendemcorreo: string;
+  sendclntenombre: string;
+  sendclntecorreo: string;
+  sendprfmatotal: number;
+  sendsuidentificador: string;
+  sendcjidentificador: string;
+  sendmpnombre: string;
+};
+
 const SAVE_PROFORMA_HEADER_QUERY = `
   insert into proforma (
     prfmaemid,
@@ -665,6 +681,66 @@ const UPDATE_PROFORMA_DOCUMENT_PATH_BY_ID_QUERY = `
   returning prfmaid
 `;
 
+const SAVE_SEND_PROFORMA_TASK_QUERY = `
+  insert into sendproforma (
+    sendemid,
+    sendprfmaid,
+    sendprfmaidentificador,
+    sendprfmadocumento,
+    sendemruc,
+    sendemrznsocial,
+    sendemcorreo,
+    sendclntenombre,
+    sendclntecorreo,
+    sendprfmatotal,
+    sendsuidentificador,
+    sendcjidentificador,
+    sendmpnombre
+  )
+  values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+  returning sendid
+`;
+
+async function saveSendProformaTask(task: CreateSendProformaTaskDao): Promise<string> {
+  try {
+    const result = await sql.unsafe<{ sendid: string }[]>(
+      SAVE_SEND_PROFORMA_TASK_QUERY,
+      [
+        task.sendemid,
+        task.sendprfmaid,
+        task.sendprfmaidentificador,
+        task.sendprfmadocumento,
+        task.sendemruc,
+        task.sendemrznsocial,
+        task.sendemcorreo,
+        task.sendclntenombre,
+        task.sendclntecorreo,
+        task.sendprfmatotal,
+        task.sendsuidentificador,
+        task.sendcjidentificador,
+        task.sendmpnombre,
+      ],
+    );
+
+    const createdTask = result[0];
+    if (!createdTask) {
+      throw new Error('Send proforma task was not created');
+    }
+
+    return createdTask.sendid;
+  } catch (error) {
+    logger.error(
+      {
+        err: error,
+        companyId: task.sendemid,
+        proformaId: task.sendprfmaid,
+      },
+      'Error saving send proforma task',
+    );
+    throw new Error('Error saving send proforma task');
+  }
+}
+
 async function updateProformaDocumentPathById(
   proforma: FindProformaByIdDao,
   documentPath: string,
@@ -705,6 +781,7 @@ export {
   findProformaHeaderForUpdate,
   updateProformaStatusById,
   updateProformaDocumentPathById,
+  saveSendProformaTask,
 };
 
 export type {
@@ -719,4 +796,5 @@ export type {
   ProformaItemRowDao,
   ProformaListItemRowDao,
   FindProformasResponseDao,
+  CreateSendProformaTaskDao,
 };

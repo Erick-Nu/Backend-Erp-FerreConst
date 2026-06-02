@@ -27,10 +27,12 @@ import {
   findProformaHeaderForUpdate,
   findProformas,
   replaceCompleteProforma,
+  saveSendProformaTask,
   saveProformaHeader,
   saveProformaItem,
   updateProformaDocumentPathById,
   updateProformaStatusById,
+  type CreateSendProformaTaskDao,
   type ProformaItemRowDao,
   type ProformaRowDao,
   type ReplaceCompleteProformaItemDao,
@@ -89,6 +91,7 @@ const INVALID_PROFORMA_TOTAL_NEGATIVE_MESSAGE = 'Proforma total cannot be negati
 const INVALID_PROFORMA_SUBTOTAL_MISMATCH_MESSAGE = 'Subtotal does not match item totals';
 const INVALID_PROFORMA_TOTAL_MISMATCH_MESSAGE = 'Total does not match subtotal minus discount';
 const INVALID_PROFORMA_NOT_FOUND_MESSAGE = 'Proforma not found';
+const INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE = 'Proforma does not have complete data to enqueue send task';
 const INVALID_PROFORMA_STATUS_EDIT_MESSAGE = 'Only emitted proformas can be edited';
 const INVALID_PROFORMA_STATUS_PAY_MESSAGE = 'Only emitted proformas can be paid';
 const INVALID_PROFORMA_STATUS_CANCEL_MESSAGE = 'Only emitted proformas can be canceled';
@@ -195,6 +198,70 @@ function validateNonNegativeNumber(value: number, invalidMessage: string): numbe
   }
 
   return value;
+}
+
+function buildSendProformaTaskSnapshot(proforma: ProformaRowDao): CreateSendProformaTaskDao {
+  try {
+    const sendprfmaidentificador = validateRequiredString(
+      proforma.prfmaidentificador ?? '',
+      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
+    );
+    const sendprfmadocumento = validateRequiredString(
+      proforma.prfmadocumento ?? '',
+      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
+    );
+    const sendemruc = validateRequiredString(proforma.emruc ?? '', INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE);
+    const sendemrznsocial = validateRequiredString(
+      proforma.emrznsocial ?? '',
+      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
+    );
+    const sendemcorreo = validateRequiredString(
+      proforma.emcorreo ?? '',
+      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
+    );
+    const sendclntenombre = validateRequiredString(
+      proforma.clntenombre ?? '',
+      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
+    );
+    const sendclntecorreo = validateRequiredString(
+      proforma.clntecorreo ?? '',
+      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
+    );
+    const sendsuidentificador = validateRequiredString(
+      proforma.suidentificador ?? '',
+      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
+    );
+    const sendcjidentificador = validateRequiredString(
+      proforma.cjidentificador ?? '',
+      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
+    );
+    const sendmpnombre = validateRequiredString(
+      proforma.mpnombre ?? '',
+      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
+    );
+    const sendprfmatotal = validateNonNegativeNumber(
+      parseNumericValue(proforma.prfmatotal),
+      INVALID_NON_NEGATIVE_TOTAL_MESSAGE,
+    );
+
+    return {
+      sendemid: proforma.prfmaemid,
+      sendprfmaid: proforma.prfmaid,
+      sendprfmaidentificador,
+      sendprfmadocumento,
+      sendemruc,
+      sendemrznsocial,
+      sendemcorreo,
+      sendclntenombre,
+      sendclntecorreo,
+      sendprfmatotal,
+      sendsuidentificador,
+      sendcjidentificador,
+      sendmpnombre,
+    };
+  } catch {
+    throw createErrorWithStatusCode(INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE, CONFLICT_STATUS_CODE);
+  }
 }
 
 function validateFindProformasParams(params: FindProformasParamsDto): FindProformasParamsDto {
@@ -1189,6 +1256,18 @@ async function payProforma(proforma: ProformaActionDto, user: LoginUserDto): Pro
       },
       'pagada',
     );
+
+    const paidProformaDB = await findProformaById({
+      prfmaemid: user.usemid,
+      prfmaid,
+    });
+
+    if (!paidProformaDB) {
+      throw new Error(INVALID_PROFORMA_NOT_FOUND_MESSAGE);
+    }
+
+    const sendProformaTask = buildSendProformaTaskSnapshot(paidProformaDB);
+    await saveSendProformaTask(sendProformaTask);
 
     return await buildProformaResponseOrThrow(user.usemid, prfmaid);
   } catch (error) {
