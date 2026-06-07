@@ -157,36 +157,66 @@ Luego ajusta `.env` con los valores reales del entorno.
 
 ## Variables de entorno
 
+El proyecto carga variables con `dotenv` desde `.env`.
+
+Referencia base:
+
+```bash
+cp .env.example .env
+```
+
+Valores de ejemplo actuales:
+
+```env
+LOG_LEVEL=info
+PORT=3000
+CORS_ORIGIN=*
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/esnt_ferreteria
+PUBLIC_BASE_URL=http://localhost:3000
+JWT_SECRET=change-this-secret-with-at-least-32-characters
+ACCESS_TOKEN_EXPIRES_IN=1h
+REFRESH_TOKEN_EXPIRES_IN_HOURS=168
+BCRYPT_SALT_ROUNDS=10
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+```
+
 ### Requeridas para la API
 
 | Variable | Descripcion |
 | --- | --- |
-| `LOG_LEVEL` | Nivel de logs para `pino`. |
-| `PORT` | Puerto HTTP de la API. |
-| `CORS_ORIGIN` | Origen permitido por CORS. |
-| `DATABASE_URL` | Cadena de conexion PostgreSQL. |
-| `PUBLIC_BASE_URL` | URL publica usada para construir rutas de archivos. |
-| `JWT_SECRET` | Secreto para firmar tokens. |
-| `ACCESS_TOKEN_EXPIRES_IN` | Duracion del access token. |
-| `REFRESH_TOKEN_EXPIRES_IN_HOURS` | Duracion del refresh token en horas. |
-| `BCRYPT_SALT_ROUNDS` | Rondas para hashing de password. |
+| `LOG_LEVEL` | Nivel de logs para `pino` como `info`, `warn`, `error` o `debug`. |
+| `PORT` | Puerto HTTP de la API. Debe ser entero. |
+| `CORS_ORIGIN` | Origen permitido por CORS. Puede ser `*` en desarrollo. |
+| `DATABASE_URL` | Cadena de conexion PostgreSQL completa. |
+| `PUBLIC_BASE_URL` | URL publica base usada para construir rutas de archivos expuestos por `/uploads`. |
+| `JWT_SECRET` | Secreto para firmar tokens. Debe ser fuerte y privado. |
+| `ACCESS_TOKEN_EXPIRES_IN` | Duracion del access token en formato compatible con la libreria JWT, por ejemplo `1h`. |
+| `REFRESH_TOKEN_EXPIRES_IN_HOURS` | Duracion del refresh token en horas. Debe ser entero. |
+| `BCRYPT_SALT_ROUNDS` | Rondas para hashing de password. Debe ser entero. |
 
 ### Requeridas si usas `sendProforma`
 
 | Variable | Descripcion |
 | --- | --- |
-| `SMTP_HOST` | Host SMTP. |
-| `SMTP_PORT` | Puerto SMTP. |
-| `SMTP_SECURE` | `true` o `false`. |
-| `SMTP_USER` | Usuario SMTP base. |
-| `SMTP_PASS` | Password o app password SMTP. |
-| `SMTP_FROM` | Remitente por defecto del correo. |
+| `SMTP_HOST` | Host SMTP, por ejemplo `smtp.gmail.com`. |
+| `SMTP_PORT` | Puerto SMTP. Debe ser entero. |
+| `SMTP_SECURE` | Booleano. Acepta `true`, `false`, `1` o `0`. |
 
 ### Opcionales
 
 | Variable | Descripcion |
 | --- | --- |
-| `GMAIL_API_KEY` | Variable admitida por el loader de entorno, pero actualmente no se consume en la logica activa del proyecto. |
+| `GMAIL_API_KEY` | Variable admitida por `src/config/env.ts`, pero actualmente no participa en la logica activa del proyecto. |
+
+Notas importantes:
+
+- Las variables obligatorias de la API se validan al arrancar el proceso y si faltan, el proyecto falla en startup.
+- `SMTP_HOST`, `SMTP_PORT` y `SMTP_SECURE` son opcionales para la API general, pero necesarias para usar el agente `sendProforma`.
+- Las credenciales del correo del agente no salen de `.env`: se obtienen por empresa desde la tabla `configuracion`.
+- Para `sendProforma`, la empresa debe tener configuradas las claves `sendproforma.email.user` y `sendproforma.email.password`.
+- `src/config/env.ts` recorta espacios en blanco y valida tipos numericos y booleanos.
 
 ## Scripts disponibles
 
