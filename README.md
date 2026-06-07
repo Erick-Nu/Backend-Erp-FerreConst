@@ -1,15 +1,29 @@
 # esnt-backend-ferreteria
 
-Backend API para gestion de ferreteria construido con Node.js, TypeScript y Express.
+Backend API para gestion de una ferreteria, construido con Node.js, TypeScript, Express y PostgreSQL.
 
-## Estado actual del backend
+El proyecto resuelve tres frentes principales:
 
-- API REST modular por capas: `model`, `dto`, `dao`, `service`, `controller`, `route`.
-- Autenticacion con JWT.
-- Persistencia en PostgreSQL usando `postgres`.
-- Carga de imagenes con `multer`.
-- Logging con `pino` + `morgan`.
-- Recursos estaticos expuestos en `/uploads`.
+- API REST autenticada con JWT para el ERP de ferreteria.
+- Generacion de proformas PDF y exposicion de archivos por `/uploads`.
+- Procesos en segundo plano para envio de proformas por correo y generacion de alertas de stock bajo.
+
+## Que hace el proyecto
+
+La API concentra modulos de negocio para:
+
+- autenticacion y manejo de sesion
+- empresas, usuarios, sucursales y cajas
+- catalogos base como categorias, marcas, medidas y proveedores
+- productos, stock y clientes
+- proformas, pago/cancelacion y generacion de PDF
+- configuraciones por empresa
+- alertas de stock con consulta paginada y notificaciones SSE
+
+Ademas incluye dos agentes asincronos:
+
+- `sendProforma`: envia por correo proformas pendientes con su PDF adjunto
+- `stockAlert`: detecta productos con stock bajo y crea/actualiza alertas
 
 ## Stack tecnico
 
@@ -18,6 +32,119 @@ Backend API para gestion de ferreteria construido con Node.js, TypeScript y Expr
 - TypeScript
 - Express 5
 - PostgreSQL
+- `postgres` como cliente SQL
+- JWT para autenticacion
+- `multer` para carga de imagenes
+- `pdfkit` + `pdfkit-table` para PDFs
+- `nodemailer` para correo
+- `pino` + `morgan` para logging
+
+## Arquitectura
+
+La API sigue una estructura modular por capas. En la mayoria de modulos se repite este patron:
+
+- `dto`: contratos de entrada/salida
+- `model`: tipos del dominio o filas consultadas
+- `dao`: acceso a base de datos
+- `service`: reglas de negocio
+- `controller`: adaptacion HTTP
+- `route`: definicion de endpoints
+
+El flujo tipico de una peticion es:
+
+`route -> controller -> service -> dao -> PostgreSQL`
+
+## Estructura del proyecto
+
+```text
+src/
+  agents/
+    sendProforma/
+    stockAlert/
+  config/
+  middlewares/
+  modules/
+    alert/
+    auth/
+    branch/
+    brand/
+    category/
+    checkout/
+    client/
+    company/
+    config/
+    medida/
+    playmentMethod/
+    product/
+    proforma/
+    proveedor/
+    sequence/
+    stock/
+    user/
+  services/
+  types/
+  utils/
+    pdf/
+  app.ts
+  server.ts
+documentacion/
+ecosystem.config.cjs
+```
+
+## Componentes clave
+
+### API HTTP
+
+- Punto de entrada: `src/server.ts`
+- Configuracion de Express y rutas: `src/app.ts`
+- Ruta base publica: `GET /`
+- Archivos estaticos: `/uploads`
+
+### Base de datos
+
+- Conexion centralizada en `src/config/database.ts`
+- Se usa `DATABASE_URL` como unica cadena de conexion
+- El repo no incluye migraciones ni schema versionado; la estructura de la BD debe existir previamente
+
+### Autenticacion
+
+- Login: `POST /auth/login`
+- Refresh: `POST /auth/refresh`
+- Logout: `POST /auth/logout`
+- El middleware `authenticate` valida el bearer token y adjunta `usid`, `usemid` y `usrol` al request
+
+### Proformas y PDFs
+
+- Las proformas se generan y consultan bajo `/proformas`
+- El PDF se construye con `pdfkit` y se guarda en `uploads/proformas/<ruc>/`
+- La plantilla PDF vive en `src/utils/pdf/`
+
+### Alertas
+
+- Consulta paginada: `GET /alerts`
+- Streaming SSE: `GET /alerts/events`
+- Marcado como visto: `PATCH /alerts/:id/visto`
+
+### Agentes
+
+- `sendProforma` consulta proformas pendientes, arma el correo HTML y adjunta el PDF
+- `stockAlert` revisa stock bajo y alimenta la tabla de alertas
+
+## Requisitos previos
+
+Antes de levantar el proyecto debes tener:
+
+- Node.js compatible con la version definida en `package.json`
+- npm instalado
+- PostgreSQL disponible
+- variables de entorno configuradas
+- estructura de base de datos ya creada
+
+Para `sendProforma` tambien necesitas:
+
+- acceso SMTP funcional
+- plantilla HTML en `uploads/templates/send-proforma-email.html`
+- configuracion en base de datos para las empresas que enviaran correos
 
 ## Instalacion
 
@@ -26,21 +153,42 @@ npm install
 cp .env.example .env
 ```
 
+Luego ajusta `.env` con los valores reales del entorno.
+
 ## Variables de entorno
 
-Variables requeridas:
+### Requeridas para la API
 
-- `LOG_LEVEL`
-- `PORT`
-- `CORS_ORIGIN`
-- `DATABASE_URL`
-- `PUBLIC_BASE_URL`
-- `JWT_SECRET`
-- `ACCESS_TOKEN_EXPIRES_IN`
-- `REFRESH_TOKEN_EXPIRES_IN_HOURS`
-- `BCRYPT_SALT_ROUNDS`
+| Variable | Descripcion |
+| --- | --- |
+| `LOG_LEVEL` | Nivel de logs para `pino`. |
+| `PORT` | Puerto HTTP de la API. |
+| `CORS_ORIGIN` | Origen permitido por CORS. |
+| `DATABASE_URL` | Cadena de conexion PostgreSQL. |
+| `PUBLIC_BASE_URL` | URL publica usada para construir rutas de archivos. |
+| `JWT_SECRET` | Secreto para firmar tokens. |
+| `ACCESS_TOKEN_EXPIRES_IN` | Duracion del access token. |
+| `REFRESH_TOKEN_EXPIRES_IN_HOURS` | Duracion del refresh token en horas. |
+| `BCRYPT_SALT_ROUNDS` | Rondas para hashing de password. |
 
-## Scripts
+### Requeridas si usas `sendProforma`
+
+| Variable | Descripcion |
+| --- | --- |
+| `SMTP_HOST` | Host SMTP. |
+| `SMTP_PORT` | Puerto SMTP. |
+| `SMTP_SECURE` | `true` o `false`. |
+| `SMTP_USER` | Usuario SMTP base. |
+| `SMTP_PASS` | Password o app password SMTP. |
+| `SMTP_FROM` | Remitente por defecto del correo. |
+
+### Opcionales
+
+| Variable | Descripcion |
+| --- | --- |
+| `GMAIL_API_KEY` | Variable admitida por el loader de entorno, pero actualmente no se consume en la logica activa del proyecto. |
+
+## Scripts disponibles
 
 ```bash
 npm run dev
@@ -52,33 +200,81 @@ npm run format
 npm run format:check
 ```
 
-## Autenticacion y seguridad
+## Como levantar el proyecto
 
-- Endpoint publico base: `GET /`
-- Login: `POST /auth/login`
-- Refresh de sesion: `POST /auth/refresh`
-- Logout: `POST /auth/logout`
-- El resto de endpoints de negocio usan:
+### Desarrollo
+
+API:
+
+```bash
+npm run dev
+```
+
+Agente `sendProforma`:
+
+```bash
+node --import tsx src/agents/sendProforma/task/sendProformaTask.ts
+```
+
+Agente `stockAlert`:
+
+```bash
+node --import tsx src/agents/stockAlert/task/stockAlertTask.ts
+```
+
+### Produccion
+
+Compila primero:
+
+```bash
+npm run build
+```
+
+Luego puedes arrancar la API compilada:
+
+```bash
+npm start
+```
+
+El archivo `ecosystem.config.cjs` existe para PM2, pero actualmente contiene rutas absolutas de despliegue especificas del entorno original. Si vas a reutilizarlo en otra maquina, revisa y ajusta `cwd` y scripts antes de usarlo.
+
+## Modulos y rutas base
+
+Las rutas estan registradas en `src/app.ts`.
+
+| Modulo | Ruta base |
+| --- | --- |
+| system | `/` |
+| auth | `/auth` |
+| companies | `/companies` |
+| users | `/users` |
+| branches | `/branches` |
+| checkouts | `/checkouts` |
+| categories | `/categories` |
+| brands | `/brands` |
+| proveedores | `/proveedores` |
+| medidas | `/medidas` |
+| products | `/products` |
+| stocks | `/stocks` |
+| clients | `/clients` |
+| playment-methods | `/playment-methods` |
+| proformas | `/proformas` |
+| configs | `/configs` |
+| alerts | `/alerts` |
+
+## Convenciones de la API
+
+### Autenticacion
+
+Excepto `GET /` y los endpoints de autenticacion, la API espera:
 
 ```http
 Authorization: Bearer <token>
 ```
 
-- El token incluye datos del usuario autenticado (id, empresa, rol).
-- Se validan estados de usuario/empresa segun las reglas de cada modulo.
-- Login entrega `accessToken` y `refreshToken`.
-- Refresh aplica rotacion de refresh token y devuelve un nuevo par de tokens.
-
-## Convenciones generales de la API
-
 ### Paginacion
 
-Los listados usan query params obligatorios:
-
-- `page` (entero positivo)
-- `pageSize` (entero positivo)
-
-Formato de respuesta paginada:
+Los listados paginados devuelven:
 
 ```json
 {
@@ -92,205 +288,106 @@ Formato de respuesta paginada:
 
 ### Carga de imagenes
 
-Endpoints que soportan imagen permiten:
+El middleware de imagen usa:
 
-- `Content-Type: multipart/form-data`
-- Campo de archivo: `imagen`
-- Formatos: `.png`, `.jpg`
-- Tamano maximo: `5MB`
+- `multipart/form-data`
+- campo `imagen`
+- extensiones permitidas: `.png`, `.jpg`
+- tamano maximo: `5MB`
 
-Si no se envia imagen en endpoints que lo soportan, se usa imagen por defecto.
+Las imagenes se guardan bajo `uploads/` y luego se publican como URL usando `PUBLIC_BASE_URL`.
 
-### Estados de entidades
+### Rate limiting
 
-En varios recursos se maneja estado:
+La API aplica limites por IP:
 
-- `activo`
-- `inactivo`
-- `eliminado`
+- `/auth`: `10` requests por minuto
+- metodos de escritura (`POST`, `PUT`, `PATCH`, `DELETE`): `60` requests por minuto
+- lecturas `GET`: `120` requests por minuto
 
-### Errores comunes
+### Seguridad y middleware
 
-- `401 Unauthorized`: token ausente o invalido.
-- `400 Bad Request`: validaciones de entrada (params, body o reglas de negocio).
-- `404 Not Found`: recurso no encontrado.
+- `helmet` para headers de seguridad
+- `cors` configurable por entorno
+- `morgan` conectado a `pino`
+- middleware global de errores y `notFound`
 
-## Resumen de endpoints actuales
+## Archivos generados y almacenamiento local
 
-### Base
+El proyecto usa `uploads/` como almacenamiento local para:
 
-- `GET /`
+- imagenes de empresas
+- imagenes de usuarios
+- imagenes de productos
+- PDFs de proformas
+- plantilla HTML de correo para envio de proformas
 
-### Auth
+Rutas importantes:
 
-- `POST /auth/login` inicia sesion con `emruc`, `usapodo`, `uspassword`.
-- `POST /auth/refresh` renueva sesion con `refreshToken`.
-- `POST /auth/logout` cierra sesion y revoca el `refreshToken`.
+- `uploads/proformas/`
+- `uploads/templates/send-proforma-email.html`
 
-### Companies
+`uploads/` se expone publicamente desde Express y esta ignorado por git.
 
-- `POST /companies`
-- `GET /companies`
-- `GET /companies/:id`
-- `PATCH /companies/:id`
-- `PATCH /companies/:id/status`
+## Agentes en detalle
 
-Notas:
-- Soporta imagen de empresa en registro/actualizacion.
-- `PATCH /companies/:id/status` actualiza solo `emestado`.
+### `sendProforma`
 
-### Users
+Responsabilidad:
 
-- `POST /users`
-- `GET /users`
-- `GET /users/:id`
-- `PATCH /users/:id`
-- `PATCH /users/:id/status`
+- encontrar proformas pendientes por empresa
+- marcar estado de procesamiento
+- renderizar el HTML del correo
+- adjuntar el PDF de la proforma
+- enviar el correo y actualizar el estado final
 
-Notas:
-- Soporta imagen de perfil en registro/actualizacion.
-- `PATCH /users/:id/status` actualiza solo `usestado`.
+Dependencias operativas:
 
-### Branches
+- `SMTP_*` en `.env`
+- `uploads/templates/send-proforma-email.html`
+- configuracion global en tabla `configuracion` con clave `sendproforma.email.empresa`
+- configuracion por empresa con claves:
+  - `sendproforma.email.user`
+  - `sendproforma.email.password`
 
-- `POST /branches`
-- `GET /branches`
-- `GET /branches/:id`
-- `PATCH /branches/:id`
+Comportamiento:
 
-### Checkouts
+- separa empresas por RUC usando `;`
+- procesa lotes por empresa
+- corre una iteracion inicial y luego vuelve a ejecutar cada 4 minutos
 
-- `POST /checkouts`
-- `GET /checkouts`
-- `GET /checkouts/:id`
-- `PATCH /checkouts/:id/status`
+### `stockAlert`
 
-Nota:
-- `GET /checkouts/:id` requiere query param `cjsuid`.
+Responsabilidad:
 
-### Categories
+- leer empresas configuradas
+- detectar productos con cantidad menor o igual al stock minimo
+- crear o actualizar alertas visibles
 
-- `POST /categories`
-- `GET /categories`
-- `GET /categories/:id`
-- `PATCH /categories/:id`
+Dependencias operativas:
 
-### Brands
+- configuracion global en tabla `configuracion` con clave `stockalert.empresa`
 
-- `POST /brands`
-- `GET /brands`
-- `GET /brands/:id`
-- `PATCH /brands/:id`
+Comportamiento:
 
-### Proveedores
+- separa empresas por RUC usando `;`
+- corre una iteracion inicial y luego vuelve a ejecutar cada 5 minutos
 
-- `POST /proveedores`
-- `GET /proveedores`
-- `GET /proveedores/:id`
-- `PATCH /proveedores/:id`
+## Calidad y desarrollo
 
-### Medidas
+TypeScript esta configurado en modo estricto con:
 
-- `POST /medidas`
-- `GET /medidas`
-- `GET /medidas/:id`
-- `PATCH /medidas/:id`
+- `strict`
+- `noUncheckedIndexedAccess`
+- `exactOptionalPropertyTypes`
 
-### Playment Methods
+La salida compilada va a `dist/`.
 
-- `POST /playment-methods`
-- `GET /playment-methods`
-- `GET /playment-methods/:id`
-- `PATCH /playment-methods/:id`
+## Resumen rapido para una persona nueva
 
-### Products
+Si entras por primera vez al proyecto, este es el camino mas corto para entenderlo:
 
-- `POST /products`
-- `GET /products`
-- `GET /products/:id`
-- `PATCH /products/:id`
-
-Notas:
-- Soporta imagen en registro/actualizacion.
-- En las respuestas se incluyen relaciones de categoria, marca, proveedor y medida.
-
-### Stocks
-
-- `POST /stocks`
-- `GET /stocks`
-- `GET /stocks/all`
-- `GET /stocks/:id`
-- `PATCH /stocks/:id`
-
-Notas:
-- `GET /stocks` y `GET /stocks/all` usan filtros por empresa/sucursal y paginacion.
-- `PATCH /stocks/:id` exige `stcksuid` y actualiza cantidad/estado.
-
-### Clients
-
-- `POST /clients`
-- `GET /clients`
-- `GET /clients/:id`
-- `PATCH /clients/:id`
-
-Notas:
-- Maneja identificacion por tipo (`cedula` o `ruc`) con validaciones.
-- Evita duplicados de identificacion/correo dentro de la empresa.
-
-### Proformas
-
-- `POST /proformas`
-- `GET /proformas`
-- `GET /proformas/:id`
-- `GET /proformas/:id/pdf`
-- `PUT /proformas/:id`
-- `PATCH /proformas/:id/pay`
-- `PATCH /proformas/:id/cancel`
-
-Notas:
-- `POST` y `PUT` validan consistencia de subtotal/descuento/total y detalle.
-- `PUT /proformas/:id` reemplaza cabecera + detalle de forma atomica.
-- Al crear o actualizar una proforma se genera el PDF y se persiste su ruta en `prfmadocumento`.
-- `GET /proformas/:id/pdf` busca el documento registrado y responde `404` si la proforma no existe o si el PDF no esta disponible.
-- Las respuestas usan el objeto `documento` con esta estructura:
-
-```json
-{
-  "documento": {
-    "docnombre": "CODIGO-SUCU-CAJA-0001_2026-05-26.pdf",
-    "docurl": "https://api.tu-dominio.com/uploads/proformas/0999999999001/CODIGO-SUCU-CAJA-0001_2026-05-26.pdf"
-  }
-}
-```
-
-## Estructura principal del proyecto
-
-```text
-src/
-  config/
-  middlewares/
-  modules/
-    auth/
-    company/
-    user/
-    branch/
-    checkout/
-    category/
-    brand/
-    proveedor/
-    medida/
-    playmentMethod/
-    product/
-    stock/
-    client/
-    proforma/
-    sequence/
-  types/
-  utils/
-  app.ts
-  server.ts
-```
-
-## Notas operativas
-
-- `uploads/` es un recurso local y esta ignorado por git.
+1. Revisa `src/app.ts` para ver todas las rutas montadas.
+2. Entra a `src/modules/<modulo>/` para seguir el flujo `route -> controller -> service -> dao`.
+3. Si trabajas con proformas, revisa tambien `src/utils/pdf/` y `uploads/templates/`.
+4. Si trabajas con automatizaciones, entra a `src/agents/`.
