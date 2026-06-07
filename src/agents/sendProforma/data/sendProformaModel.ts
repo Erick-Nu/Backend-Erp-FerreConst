@@ -22,4 +22,9 @@ type SendProformaModel = {
   sendfchactualizacion: Date;
 };
 
-export type { SendProformaModel };
+type CompanyEmailCredentials = {
+  emailUser: string;
+  emailPassword: string;
+};
+
+export type { SendProformaModel, CompanyEmailCredentials };
