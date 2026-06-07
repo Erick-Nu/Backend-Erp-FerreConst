@@ -165,7 +165,7 @@ Referencia base:
 cp .env.example .env
 ```
 
-Valores de ejemplo actuales:
+Valores base de ejemplo:
 
 ```env
 LOG_LEVEL=info
@@ -181,6 +181,8 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
 ```
+
+`.env.example` del repositorio actualmente tambien incluye `SMTP_USER`, `SMTP_PASS` y `SMTP_FROM`, pero el flujo actual de `sendProforma` no usa `SMTP_USER` ni `SMTP_PASS` desde `.env` para autenticarse: las credenciales se resuelven por empresa desde la tabla `configuracion`.
 
 ### Requeridas para la API
 
@@ -202,20 +204,24 @@ SMTP_SECURE=false
 | --- | --- |
 | `SMTP_HOST` | Host SMTP, por ejemplo `smtp.gmail.com`. |
 | `SMTP_PORT` | Puerto SMTP. Debe ser entero. |
-| `SMTP_SECURE` | Booleano. Acepta `true`, `false`, `1` o `0`. |
+| `SMTP_SECURE` | Opcional. Booleano. Acepta `true`, `false`, `1` o `0`. Si no se define, el flujo actual usa `false`. |
 
 ### Opcionales
 
 | Variable | Descripcion |
 | --- | --- |
+| `SMTP_FROM` | Remitente por defecto del correo. Si no se define, `sendProforma` usa `task.sendemcorreo` como fallback. |
+| `SMTP_USER` | Variable cargada por `src/config/env.ts`, pero no se usa en la autenticacion actual de `sendProforma`. |
+| `SMTP_PASS` | Variable cargada por `src/config/env.ts`, pero no se usa en la autenticacion actual de `sendProforma`. |
 | `GMAIL_API_KEY` | Variable admitida por `src/config/env.ts`, pero actualmente no participa en la logica activa del proyecto. |
 
 Notas importantes:
 
 - Las variables obligatorias de la API se validan al arrancar el proceso y si faltan, el proyecto falla en startup.
-- `SMTP_HOST`, `SMTP_PORT` y `SMTP_SECURE` son opcionales para la API general, pero necesarias para usar el agente `sendProforma`.
+- `SMTP_HOST` y `SMTP_PORT` son opcionales para la API general, pero necesarias para usar el agente `sendProforma`.
 - Las credenciales del correo del agente no salen de `.env`: se obtienen por empresa desde la tabla `configuracion`.
 - Para `sendProforma`, la empresa debe tener configuradas las claves `sendproforma.email.user` y `sendproforma.email.password`.
+- `SMTP_FROM` si puede afectar el comportamiento actual porque se usa como remitente preferido del correo cuando esta definido.
 - `src/config/env.ts` recorta espacios en blanco y valida tipos numericos y booleanos.
 
 ## Scripts disponibles
