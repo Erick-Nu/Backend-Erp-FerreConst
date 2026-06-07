@@ -1,0 +1,91 @@
+import { sql } from '../../../config/database.js';
+import { logger } from '../../../utils/logger.js';
+import type { CompanyRucResult, LowStockProductResult, UpsertAlertData } from './stockAlertModel.js';
+
+const FIND_LOW_STOCK_PRODUCTS_QUERY = `
+  select
+    s.stckemid,
+    s.stcksuid,
+    s.stckprdtoid,
+    s.stckcantidad,
+    p.prdtostockminimo,
+    p.prdtostockmaximo,
+    p.prdtonombre,
+    p.prdtocodigo,
+    br.sunombre as sucursalnombre
+  from stock s
+  join producto p
+    on p.prdtoid = s.stckprdtoid
+    and p.prdtoemid = s.stckemid
+  join sucursal br
+    on br.suid = s.stcksuid
+    and br.suemid = s.stckemid
+  where s.stckemid = $1
+    and s.stckcantidad <= p.prdtostockminimo
+    and s.stckestado = 'activo'
+    and p.prdtoestado = 'activo'
+    and br.suestado = 'activo'
+`;
+
+async function findLowStockProductsByCompany(emid: string): Promise<LowStockProductResult[]> {
+  try {
+    return await sql.unsafe<LowStockProductResult[]>(FIND_LOW_STOCK_PRODUCTS_QUERY, [emid]);
+  } catch (error) {
+    logger.error({ err: error, emid }, 'Error finding low stock products by company');
+    throw new Error('Error finding low stock products by company');
+  }
+}
+
+const FIND_COMPANY_ID_BY_RUC_QUERY = `
+  select emid
+  from empresa
+  where emruc = $1
+`;
+
+async function findCompanyIdByRuc(ruc: string): Promise<string | null> {
+  try {
+    const rows = await sql.unsafe<CompanyRucResult[]>(FIND_COMPANY_ID_BY_RUC_QUERY, [ruc]);
+    const row = rows[0];
+    return row?.emid ?? null;
+  } catch (error) {
+    logger.error({ err: error, ruc }, 'Error finding company id by ruc');
+    throw new Error('Error finding company id by ruc');
+  }
+}
+
+const UPSERT_ALERT_QUERY = `
+  insert into alerta (alemid, alsuid, alprdtoid, altipo, almensaje, alcantidadactual, alstockminimo, alstockmaximo)
+  values ($1, $2, $3, $4, $5, $6, $7, $8)
+  on conflict (alemid, alsuid, alprdtoid) do update set
+    alcantidadactual = excluded.alcantidadactual,
+    alstockminimo = excluded.alstockminimo,
+    alstockmaximo = excluded.alstockmaximo,
+    alvisible = true,
+    alfchcreacion = current_timestamp
+  returning alid
+`;
+
+async function upsertAlert(alert: UpsertAlertData): Promise<string> {
+  try {
+    const result = await sql.unsafe<{ alid: string }[]>(UPSERT_ALERT_QUERY, [
+      alert.alemid,
+      alert.alsuid,
+      alert.alprdtoid,
+      alert.altipo,
+      alert.almensaje,
+      alert.alcantidadactual,
+      alert.alstockminimo,
+      alert.alstockmaximo,
+    ]);
+    const alertDB = result[0];
+    if (!alertDB) {
+      throw new Error('Alert was not upserted');
+    }
+    return alertDB.alid;
+  } catch (error) {
+    logger.error({ err: error, emid: alert.alemid, productId: alert.alprdtoid }, 'Error upserting alert');
+    throw new Error('Error upserting alert');
+  }
+}
+
+export { findCompanyIdByRuc, findLowStockProductsByCompany, upsertAlert };
