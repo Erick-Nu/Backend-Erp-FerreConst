@@ -2,6 +2,7 @@ import { logger } from '../../../utils/logger.js';
 import {
   findCompanyIdByRuc,
   findLowStockProductsByCompany,
+  hideObsoleteAlerts,
   upsertAlert,
 } from '../data/stockAlertDao.js';
 import { findStockAlertConfiguredCompanyRucValue } from '../data/stockAlertConfig.js';
@@ -96,6 +97,15 @@ async function runStockAlertIteration(): Promise<void> {
           continue;
         }
 
+        const hiddenCount = await hideObsoleteAlerts(emid);
+
+        if (hiddenCount > 0) {
+          logger.info(
+            { emid, hiddenCount },
+            '[StockAlertTask] Alertas obsoletas ocultadas',
+          );
+        }
+
         const alertsCreated = await processCompanyAlertBatch(emid);
         totalAlerts += alertsCreated;
         logger.info(
@@ -119,15 +129,15 @@ async function runStockAlertIteration(): Promise<void> {
 
 async function startStockAlertAgent(): Promise<void> {
   let isRunning = true;
-  let intervalId: ReturnType<typeof setInterval> | null = null;
+  let timerId: ReturnType<typeof setTimeout> | null = null;
 
   const handleSignal = (signal: NodeJS.Signals): void => {
     logger.info('[StockAlertTask] Señal recibida: ' + signal);
     isRunning = false;
 
-    if (intervalId) {
-      clearInterval(intervalId);
-      intervalId = null;
+    if (timerId) {
+      clearTimeout(timerId);
+      timerId = null;
     }
   };
 
@@ -136,22 +146,26 @@ async function startStockAlertAgent(): Promise<void> {
 
   logger.info('[StockAlertTask] Agente de alertas de stock iniciado');
 
-  try {
-    logger.info('[StockAlertTask] Ejecutando iteración inicial');
-    await runStockAlertIteration();
+  const scheduleNext = (): void => {
+    if (!isRunning) {
+      return;
+    }
 
-    intervalId = setInterval(async () => {
-      if (!isRunning) {
-        return;
-      }
-
+    timerId = setTimeout(async () => {
       try {
         logger.info('[StockAlertTask] Ejecutando iteración programada');
         await runStockAlertIteration();
       } catch (error) {
         logger.error({ err: error }, 'Error en el ciclo del agente');
       }
+      scheduleNext();
     }, AGENT_POLL_INTERVAL_MS);
+  };
+
+  try {
+    logger.info('[StockAlertTask] Ejecutando iteración inicial');
+    await runStockAlertIteration();
+    scheduleNext();
 
     await new Promise<void>((resolvePromise) => {
       const waitForStop = setInterval(() => {
@@ -162,8 +176,8 @@ async function startStockAlertAgent(): Promise<void> {
       }, 250);
     });
   } finally {
-    if (intervalId) {
-      clearInterval(intervalId);
+    if (timerId) {
+      clearTimeout(timerId);
     }
 
     process.off('SIGINT', handleSignal);

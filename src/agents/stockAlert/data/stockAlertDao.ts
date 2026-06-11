@@ -88,4 +88,46 @@ async function upsertAlert(alert: UpsertAlertData): Promise<string> {
   }
 }
 
-export { findCompanyIdByRuc, findLowStockProductsByCompany, upsertAlert };
+const HIDE_OBSOLETE_ALERTS_QUERY = `
+  update alerta
+  set alvisible = false
+  where alemid = $1
+    and altipo = 'stock_bajo'
+    and alvisible = true
+    and (
+      not exists (
+        select 1 from producto p
+        where p.prdtoid = alerta.alprdtoid
+          and p.prdtoemid = alerta.alemid
+          and p.prdtoestado = 'activo'
+      )
+      or not exists (
+        select 1 from sucursal br
+        where br.suid = alerta.alsuid
+          and br.suemid = alerta.alemid
+          and br.suestado = 'activo'
+      )
+      or not exists (
+        select 1 from stock s
+        join producto p on p.prdtoid = s.stckprdtoid and p.prdtoemid = s.stckemid
+        where s.stckemid = alerta.alemid
+          and s.stcksuid = alerta.alsuid
+          and s.stckprdtoid = alerta.alprdtoid
+          and s.stckestado = 'activo'
+          and s.stckcantidad <= p.prdtostockminimo
+      )
+    )
+  returning alid
+`;
+
+async function hideObsoleteAlerts(emid: string): Promise<number> {
+  try {
+    const result = await sql.unsafe<{ alid: string }[]>(HIDE_OBSOLETE_ALERTS_QUERY, [emid]);
+    return result.length;
+  } catch (error) {
+    logger.error({ err: error, emid }, 'Error hiding obsolete alerts');
+    throw new Error('Error hiding obsolete alerts');
+  }
+}
+
+export { findCompanyIdByRuc, findLowStockProductsByCompany, hideObsoleteAlerts, upsertAlert };
