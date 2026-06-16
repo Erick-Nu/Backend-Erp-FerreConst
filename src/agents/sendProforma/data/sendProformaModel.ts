@@ -8,9 +8,10 @@ type SendProformaModel = {
   sendprfmadocumento: string;
   sendemruc: string;
   sendemrznsocial: string;
-  sendemcorreo: string;
+  sendemcorreo: string | null;
   sendclntenombre: string;
-  sendclntecorreo: string;
+  sendclntecorreo: string | null;
+  sendclntetelefono: string | null;
   sendprfmatotal: number;
   sendsuidentificador: string;
   sendcjidentificador: string;

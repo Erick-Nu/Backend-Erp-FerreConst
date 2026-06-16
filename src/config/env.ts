@@ -16,6 +16,7 @@ class EnvConfig {
   public readonly smtpUser: string | undefined;
   public readonly smtpPass: string | undefined;
   public readonly smtpFrom: string | undefined;
+  public readonly whatsappApiconsultToken: string | undefined;
   public readonly gmailApiKey: string | undefined;
 
   private readonly errors: string[] = [];
@@ -40,6 +41,7 @@ class EnvConfig {
     this.smtpUser = this.getOptionalStringEnv('SMTP_USER');
     this.smtpPass = this.getOptionalStringEnv('SMTP_PASS');
     this.smtpFrom = this.getOptionalStringEnv('SMTP_FROM');
+    this.whatsappApiconsultToken = this.getOptionalStringEnv('WHATSAPP_APICONSULT_TOKEN');
     this.gmailApiKey = this.getOptionalStringEnv('GMAIL_API_KEY');
     this.reportErrors();
   }
