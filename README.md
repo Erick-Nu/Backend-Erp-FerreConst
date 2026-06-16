@@ -205,6 +205,7 @@ SMTP_SECURE=false
 | `SMTP_HOST` | Host SMTP, por ejemplo `smtp.gmail.com`. |
 | `SMTP_PORT` | Puerto SMTP. Debe ser entero. |
 | `SMTP_SECURE` | Opcional. Booleano. Acepta `true`, `false`, `1` o `0`. Si no se define, el flujo actual usa `false`. |
+| `WHATSAPP_APICONSULT_TOKEN` | Requerida si una empresa usa el canal WhatsApp de `sendProforma`. Token global para Apiconsult. |
 
 ### Opcionales
 
@@ -220,9 +221,16 @@ Notas importantes:
 - Las variables obligatorias de la API se validan al arrancar el proceso y si faltan, el proyecto falla en startup.
 - `SMTP_HOST` y `SMTP_PORT` son opcionales para la API general, pero necesarias para usar el agente `sendProforma`.
 - Las credenciales del correo del agente no salen de `.env`: se obtienen por empresa desde la tabla `configuracion`.
-- Para `sendProforma`, la empresa debe tener configuradas las claves `sendproforma.email.user` y `sendproforma.email.password`.
+- Para `sendProforma`, la empresa debe tener configuradas las claves del canal que vaya a usar.
+- `sendproforma.email.active` y `sendproforma.whatsapp.active` aceptan `true` o `false`.
+- Solo un canal se usa por empresa. Si `sendproforma.email.active` es `true`, email tiene prioridad sobre WhatsApp.
+- Para email, la empresa debe tener `sendproforma.email.user` y `sendproforma.email.password`.
+- Para WhatsApp, la empresa debe tener `sendproforma.whatsapp.api`, que corresponde a la `instance` enviada a Apiconsult.
+- El canal WhatsApp envia el PDF como `file` en base64 para preservar el nombre de la proforma en el archivo recibido.
+- Si falta la configuracion del canal activo o tiene un valor inválido, el agente omite esa empresa.
 - `SMTP_FROM` si puede afectar el comportamiento actual porque se usa como remitente preferido del correo cuando esta definido.
 - `src/config/env.ts` recorta espacios en blanco y valida tipos numericos y booleanos.
+- Como el repo no incluye migraciones, si habilitas WhatsApp debes agregar manualmente la columna `sendclntetelefono` en la tabla `sendproforma`.
 
 ## Scripts disponibles
 
@@ -373,22 +381,30 @@ Responsabilidad:
 
 - encontrar proformas pendientes por empresa
 - marcar estado de procesamiento
-- renderizar el HTML del correo
-- adjuntar el PDF de la proforma
-- enviar el correo y actualizar el estado final
+- resolver un solo canal por empresa con prioridad email sobre whatsapp
+- enviar la proforma por email o por whatsapp y actualizar el estado final
 
 Dependencias operativas:
 
 - `SMTP_*` en `.env`
+- `WHATSAPP_APICONSULT_TOKEN` en `.env` si usas el canal WhatsApp
 - `uploads/templates/send-proforma-email.html`
 - configuracion global en tabla `configuracion` con clave `sendproforma.email.empresa`
 - configuracion por empresa con claves:
+  - `sendproforma.email.active`
   - `sendproforma.email.user`
   - `sendproforma.email.password`
+  - `sendproforma.whatsapp.active`
+  - `sendproforma.whatsapp.api`
+- columna `sendclntetelefono` en la tabla `sendproforma`
 
 Comportamiento:
 
 - separa empresas por RUC usando `;`
+- si `sendproforma.email.active` es `true`, usa email y no ejecuta WhatsApp para esa empresa
+- si email no está activo y `sendproforma.whatsapp.active` es `true`, usa WhatsApp
+- el canal WhatsApp envia el PDF como base64 y conserva `filename` con el identificador de la proforma
+- si ningún canal está activo, omite la empresa
 - procesa lotes por empresa
 - corre una iteracion inicial y luego vuelve a ejecutar cada 4 minutos
 
