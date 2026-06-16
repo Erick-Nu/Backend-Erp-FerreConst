@@ -2,38 +2,34 @@ import { sql } from '../../../config/database.js';
 import { logger } from '../../../utils/logger.js';
 import type { SendProformaModel } from './sendProformaModel.js';
 
-const FIND_PENDING_SEND_PROFORMAS_BY_COMPANY_RUC_QUERY = `
-  select * from sendproforma
-  where sendestado = 'pendiente' and sendemruc = $1
-  order by sendfchcreacion asc
-  limit $2
+const SEND_PROFORMA_LOG_PREFIX = '[sendProformaTask]';
+
+const CLAIM_PENDING_SEND_PROFORMAS_BY_COMPANY_RUC_QUERY = `
+  with claimed as (
+    select sendid
+    from sendproforma
+    where sendestado = 'pendiente' and sendemruc = $1
+    order by sendfchcreacion asc
+    limit $2
+    for update skip locked
+  )
+  update sendproforma sp
+  set sendestado = 'procesando',
+      sendfchactualizacion = current_timestamp
+  from claimed
+  where sp.sendid = claimed.sendid
+  returning sp.*
 `;
 
-async function findPendingSendProformasByCompanyRuc(sendemruc: string, limit: number): Promise<SendProformaModel[]> {
+async function claimPendingSendProformasByCompanyRuc(sendemruc: string, limit: number): Promise<SendProformaModel[]> {
   try {
-    return await sql.unsafe<SendProformaModel[]>(FIND_PENDING_SEND_PROFORMAS_BY_COMPANY_RUC_QUERY, [
+    return await sql.unsafe<SendProformaModel[]>(CLAIM_PENDING_SEND_PROFORMAS_BY_COMPANY_RUC_QUERY, [
       sendemruc,
       limit,
     ]);
   } catch (error) {
-    logger.error({ err: error, sendemruc, limit }, 'Error finding pending send proforma tasks by company ruc');
-    throw new Error('Error finding pending send proforma tasks by company ruc');
-  }
-}
-
-const MARK_SEND_PROFORMA_PROCESSING_QUERY = `
-  update sendproforma
-  set sendestado = 'procesando',
-      sendfchactualizacion = current_timestamp
-  where sendid = $1
-`;
-
-async function markSendProformaProcessing(sendid: string): Promise<void> {
-  try {
-    await sql.unsafe(MARK_SEND_PROFORMA_PROCESSING_QUERY, [sendid]);
-  } catch (error) {
-    logger.error({ err: error, sendid }, 'Error marking send proforma task as processing');
-    throw new Error('Error marking send proforma task as processing');
+    logger.error({ err: error, sendemruc, limit }, `${SEND_PROFORMA_LOG_PREFIX} Error claiming pending send proforma tasks by company ruc`);
+    throw new Error('Error claiming pending send proforma tasks by company ruc');
   }
 }
 
@@ -49,7 +45,7 @@ async function markSendProformaCompleted(sendid: string): Promise<void> {
   try {
     await sql.unsafe(MARK_SEND_PROFORMA_COMPLETED_QUERY, [sendid]);
   } catch (error) {
-    logger.error({ err: error, sendid }, 'Error marking send proforma task as completed');
+    logger.error({ err: error, sendid }, `${SEND_PROFORMA_LOG_PREFIX} Error marking send proforma task as completed`);
     throw new Error('Error marking send proforma task as completed');
   }
 }
@@ -70,7 +66,7 @@ async function markSendProformaErrorRetryable(sendid: string, errorMessage: stri
   try {
     await sql.unsafe(MARK_SEND_PROFORMA_ERROR_RETRYABLE_QUERY, [sendid, errorMessage]);
   } catch (error) {
-    logger.error({ err: error, sendid }, 'Error marking send proforma task as retryable error');
+    logger.error({ err: error, sendid }, `${SEND_PROFORMA_LOG_PREFIX} Error marking send proforma task as retryable error`);
     throw new Error('Error marking send proforma task as retryable error');
   }
 }
@@ -88,14 +84,13 @@ async function markSendProformaErrorFinal(sendid: string, errorMessage: string):
   try {
     await sql.unsafe(MARK_SEND_PROFORMA_ERROR_FINAL_QUERY, [sendid, errorMessage]);
   } catch (error) {
-    logger.error({ err: error, sendid }, 'Error marking send proforma task as final error');
+    logger.error({ err: error, sendid }, `${SEND_PROFORMA_LOG_PREFIX} Error marking send proforma task as final error`);
     throw new Error('Error marking send proforma task as final error');
   }
 }
 
 export {
-  findPendingSendProformasByCompanyRuc,
-  markSendProformaProcessing,
+  claimPendingSendProformasByCompanyRuc,
   markSendProformaCompleted,
   markSendProformaErrorRetryable,
   markSendProformaErrorFinal,

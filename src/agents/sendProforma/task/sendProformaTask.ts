@@ -1,21 +1,38 @@
 import { env } from '../../../config/env.js';
+import { findCompanyByRuc } from '../../../modules/company/companyDao.js';
 import { sendEmail } from '../../../services/nodemailer.js';
 import { logger } from '../../../utils/logger.js';
 import {
-  findPendingSendProformasByCompanyRuc,
+  claimPendingSendProformasByCompanyRuc,
   markSendProformaCompleted,
   markSendProformaErrorFinal,
-  markSendProformaProcessing,
   markSendProformaErrorRetryable,
 } from '../data/sendProformaDao.js';
-import { findSendProformaConfiguredCompanyRucValue } from '../data/sendProformaConfig.js';
+import {
+  findSendProformaCompanyChannel,
+  findSendProformaConfiguredCompanyRucValue,
+  findSendProformaCompanyWhatsappApi,
+} from '../data/sendProformaConfig.js';
 import type { SendProformaModel } from '../data/sendProformaModel.js';
 import { getCompanyTransporter, isFileAccessError } from '../email/sendProformaTransporter.js';
 import { buildSendProformaEmailBody, resolveDocumentPath, validateDocumentAccess } from '../email/sendProformaTemplate.js';
+import { sendProformaByWhatsapp } from '../whatsapp/sendProformaWhatsappTransporter.js';
 
 const SEND_PROFORMA_COMPANY_RUC_SEPARATOR = ';';
 const SEND_PROFORMA_PER_COMPANY_LIMIT = 10;
 const AGENT_POLL_INTERVAL_MS = 240000;
+const SEND_PROFORMA_LOG_PREFIX = '[sendProformaTask]';
+const SEND_PROFORMA_EMAIL_LOG_PREFIX = '[sendProformaEmail]';
+const SEND_PROFORMA_WHATSAPP_LOG_PREFIX = '[sendProformaWhatsapp]';
+
+type CompanyChannelConfig =
+  | {
+    channel: 'email';
+  }
+  | {
+    channel: 'whatsapp';
+    whatsappApiInstance: string;
+  };
 
 async function findConfiguredCompanyRucs(): Promise<string[]> {
   try {
@@ -27,29 +44,47 @@ async function findConfiguredCompanyRucs(): Promise<string[]> {
 
     return rucValue.split(SEND_PROFORMA_COMPANY_RUC_SEPARATOR);
   } catch (error) {
-    logger.error({ err: error }, '[SendProformaTask] Error al obtener RUCs configurados');
+    logger.error({ err: error }, `${SEND_PROFORMA_LOG_PREFIX} Error al obtener RUCs configurados`);
     throw error;
   }
 }
 
-async function processSingleTask(task: SendProformaModel): Promise<boolean> {
-  logger.info('[SendProformaTask] Iniciando envio de la proforma: ' + task.sendprfmaidentificador);
+async function processSingleEmailTask(task: SendProformaModel): Promise<boolean> {
+  logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Iniciando envio de la proforma: ${task.sendprfmaidentificador}`);
 
   try {
+    const fromAddress = env.smtpFrom ?? task.sendemcorreo;
+    const recipientEmail = task.sendclntecorreo;
+
+    if (!fromAddress || !recipientEmail) {
+      logger.error(
+        {
+          sendid: task.sendid,
+          sendemid: task.sendemid,
+          hasFromAddress: Boolean(fromAddress),
+          hasRecipientEmail: Boolean(recipientEmail),
+        },
+        `${SEND_PROFORMA_EMAIL_LOG_PREFIX} Faltan datos obligatorios para envío por email`,
+      );
+      await markSendProformaErrorFinal(
+        task.sendid,
+        `${SEND_PROFORMA_EMAIL_LOG_PREFIX} Missing sender or recipient email for send proforma`,
+      );
+
+      return false;
+    }
+
     const documentPath = resolveDocumentPath(task.sendprfmadocumento);
     const emailHtml = await buildSendProformaEmailBody(task);
     const transporter = await getCompanyTransporter(task.sendemid);
 
-    logger.info('[SendProformaTask] Marcando proforma como en proceso');
-    await markSendProformaProcessing(task.sendid);
-
-    logger.info('[SendProformaTask] Validando acceso al documento');
+    logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Validando acceso al documento`);
     await validateDocumentAccess(documentPath);
 
-    logger.info('[SendProformaTask] Enviando correo con la proforma adjunta');
+    logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Enviando correo con la proforma adjunta`);
     await sendEmail(transporter, {
-      from: env.smtpFrom ?? task.sendemcorreo,
-      to: [task.sendclntecorreo],
+      from: fromAddress,
+      to: [recipientEmail],
       subject: `Proforma ${task.sendprfmaidentificador}`,
       html: emailHtml,
       text: `Estimado/a ${task.sendclntenombre}, adjuntamos su proforma ${task.sendprfmaidentificador}.`,
@@ -62,9 +97,9 @@ async function processSingleTask(task: SendProformaModel): Promise<boolean> {
       ],
     });
 
-    logger.info('[SendProformaTask] Proforma enviada correctamente');
+    logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Proforma enviada correctamente`);
     await markSendProformaCompleted(task.sendid);
-    logger.info('[SendProformaTask] Proforma marcada como completada');
+    logger.info(`${SEND_PROFORMA_LOG_PREFIX} Proforma marcada como completada`);
 
     return true;
   } catch (error) {
@@ -79,26 +114,71 @@ async function processSingleTask(task: SendProformaModel): Promise<boolean> {
           sendemruc: task.sendemruc,
           sendid: task.sendid,
         },
-        '[SendProformaTask] Error de acceso al documento de la proforma',
+        `${SEND_PROFORMA_EMAIL_LOG_PREFIX} Error de acceso al documento de la proforma`,
       );
       await markSendProformaErrorFinal(
         task.sendid,
-        `[SendProformaTask] Error de acceso al documento para la proforma ${task.sendprfmaidentificador}: ${errorMessage}`,
+        `${SEND_PROFORMA_EMAIL_LOG_PREFIX} Error de acceso al documento para la proforma ${task.sendprfmaidentificador}: ${errorMessage}`,
       );
       return false;
     }
 
     logger.error(
       { err: error, sendemid: task.sendemid, sendemruc: task.sendemruc, sendid: task.sendid },
-      '[SendProformaTask] Error al procesar tarea de envío de proforma',
+      `${SEND_PROFORMA_EMAIL_LOG_PREFIX} Error al procesar tarea de envío de proforma`,
     );
     await markSendProformaErrorRetryable(task.sendid, errorMessage);
     return false;
   }
 }
 
-async function processCompanySendBatch(ruc: string): Promise<number> {
-  const pendingTasks = await findPendingSendProformasByCompanyRuc(ruc, SEND_PROFORMA_PER_COMPANY_LIMIT);
+async function processSingleWhatsappTask(
+  task: SendProformaModel,
+  whatsappApiInstance: string,
+): Promise<boolean> {
+  logger.info(`${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Iniciando envio de la proforma: ${task.sendprfmaidentificador}`);
+
+  try {
+    logger.info(`${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Enviando proforma por whatsapp`);
+    await sendProformaByWhatsapp(task, whatsappApiInstance);
+
+    logger.info(`${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Proforma enviada correctamente`);
+    await markSendProformaCompleted(task.sendid);
+    logger.info(`${SEND_PROFORMA_LOG_PREFIX} Proforma marcada como completada`);
+
+    return true;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown send proforma whatsapp error';
+
+    if (isFileAccessError(error) && (error.code === 'ENOENT' || error.code === 'EACCES')) {
+      logger.error(
+        {
+          err: error,
+          documentPath: task.sendprfmadocumento,
+          sendemid: task.sendemid,
+          sendemruc: task.sendemruc,
+          sendid: task.sendid,
+        },
+        `${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Error de acceso al documento de la proforma`,
+      );
+      await markSendProformaErrorFinal(
+        task.sendid,
+        `${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Error de acceso al documento para la proforma ${task.sendprfmaidentificador}: ${errorMessage}`,
+      );
+      return false;
+    }
+
+    logger.error(
+      { err: error, sendemid: task.sendemid, sendemruc: task.sendemruc, sendid: task.sendid },
+      `${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Error al procesar tarea de envío de proforma`,
+    );
+    await markSendProformaErrorRetryable(task.sendid, errorMessage);
+    return false;
+  }
+}
+
+async function processCompanySendBatch(ruc: string, companyChannelConfig: CompanyChannelConfig): Promise<number> {
+  const pendingTasks = await claimPendingSendProformasByCompanyRuc(ruc, SEND_PROFORMA_PER_COMPANY_LIMIT);
 
   if (pendingTasks.length === 0) {
     return 0;
@@ -106,25 +186,27 @@ async function processCompanySendBatch(ruc: string): Promise<number> {
 
   logger.info(
     { ruc, tasks: pendingTasks.length },
-    '[SendProformaTask] Tareas pendientes encontradas para empresa',
+    `${SEND_PROFORMA_LOG_PREFIX} Tareas pendientes encontradas para empresa`,
   );
 
   let completedTasks = 0;
 
   for (const task of pendingTasks) {
     try {
-      const completed = await processSingleTask(task);
+      const completed = companyChannelConfig.channel === 'email'
+        ? await processSingleEmailTask(task)
+        : await processSingleWhatsappTask(task, companyChannelConfig.whatsappApiInstance);
 
       if (completed) {
         completedTasks += 1;
-        logger.info({ sendid: task.sendid }, '[SendProformaTask] Tarea de envío completada');
+        logger.info({ sendid: task.sendid }, `${SEND_PROFORMA_LOG_PREFIX} Tarea de envío completada`);
       } else {
-        logger.warn({ sendid: task.sendid }, '[SendProformaTask] Tarea de envío no completada');
+        logger.warn({ sendid: task.sendid }, `${SEND_PROFORMA_LOG_PREFIX} Tarea de envío no completada`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown send proforma error';
       await markSendProformaErrorRetryable(task.sendid, errorMessage);
-      logger.error({ sendid: task.sendid, err: error }, '[SendProformaTask] Error al procesar tarea');
+      logger.error({ sendid: task.sendid, err: error }, `${SEND_PROFORMA_LOG_PREFIX} Error al procesar tarea`);
     }
   }
 
@@ -136,72 +218,133 @@ async function runSendProformaIteration(): Promise<void> {
     const companyRucs = await findConfiguredCompanyRucs();
 
     if (companyRucs.length === 0) {
-      logger.info('[SendProformaTask] No hay RUCs configurados para el agente');
+      logger.info(`${SEND_PROFORMA_LOG_PREFIX} No hay RUCs configurados para el agente`);
       return;
     }
 
-    logger.info('[SendProformaTask] RUCs configurados: ' + companyRucs.length);
+    logger.info(`${SEND_PROFORMA_LOG_PREFIX} RUCs configurados: ${companyRucs.length}`);
     let totalSent = 0;
 
     for (const ruc of companyRucs) {
-      if (!ruc) {
+      const cleanedRuc = ruc.trim();
+      if (!cleanedRuc) {
         continue;
       }
 
-      logger.info('[SendProformaTask] Procesando empresa con RUC: ' + ruc);
+      logger.info(`${SEND_PROFORMA_LOG_PREFIX} Procesando empresa con RUC: ${cleanedRuc}`);
 
       try {
-        const sent = await processCompanySendBatch(ruc);
+        const companyId = await findCompanyByRuc(cleanedRuc);
+        if (!companyId) {
+          logger.warn(
+            { ruc: cleanedRuc },
+            `${SEND_PROFORMA_LOG_PREFIX} No se encontró empresa con RUC configurado`,
+          );
+          continue;
+        }
+
+        const companyChannel = await findSendProformaCompanyChannel(companyId);
+        if (!companyChannel) {
+          logger.info(
+            { ruc: cleanedRuc, sendemid: companyId },
+            `${SEND_PROFORMA_LOG_PREFIX} Empresa omitida porque no tiene canal activo para sendproforma`,
+          );
+          continue;
+        }
+
+        let companyChannelConfig: CompanyChannelConfig;
+        if (companyChannel === 'email') {
+          companyChannelConfig = {
+            channel: 'email',
+          };
+          logger.info(
+            { ruc: cleanedRuc, sendemid: companyId },
+            `${SEND_PROFORMA_EMAIL_LOG_PREFIX} Empresa habilitada para envío por email`,
+          );
+        } else {
+          if (!env.whatsappApiconsultToken) {
+            logger.warn(
+              { ruc: cleanedRuc, sendemid: companyId },
+              `${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Empresa omitida porque falta WHATSAPP_APICONSULT_TOKEN para el canal whatsapp`,
+            );
+            continue;
+          }
+
+          const whatsappApiInstance = await findSendProformaCompanyWhatsappApi(companyId);
+          if (!whatsappApiInstance) {
+            logger.warn(
+              { ruc: cleanedRuc, sendemid: companyId },
+              `${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Empresa omitida porque no tiene sendproforma.whatsapp.api configurado`,
+            );
+            continue;
+          }
+
+          companyChannelConfig = {
+            channel: 'whatsapp',
+            whatsappApiInstance,
+          };
+          logger.info(
+            { ruc: cleanedRuc, sendemid: companyId, instance: whatsappApiInstance },
+            `${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Empresa habilitada para envío por whatsapp`,
+          );
+        }
+
+        const sent = await processCompanySendBatch(cleanedRuc, companyChannelConfig);
         totalSent += sent;
-        logger.info({ ruc, sent }, '[SendProformaTask] Empresa procesada');
+        logger.info({ ruc: cleanedRuc, sent }, `${SEND_PROFORMA_LOG_PREFIX} Empresa procesada`);
       } catch (error) {
-        logger.error({ err: error, ruc }, '[SendProformaTask] Error al procesar empresa');
+        logger.error({ err: error, ruc: cleanedRuc }, `${SEND_PROFORMA_LOG_PREFIX} Error al procesar empresa`);
       }
     }
 
     if (totalSent > 0) {
-      logger.info({ totalSent }, '[SendProformaTask] Proformas enviadas en esta iteración');
+      logger.info({ totalSent }, `${SEND_PROFORMA_LOG_PREFIX} Proformas enviadas en esta iteración`);
     } else {
-      logger.info('[SendProformaTask] No hay proformas pendientes');
+      logger.info(`${SEND_PROFORMA_LOG_PREFIX} No hay proformas pendientes`);
     }
   } catch (error) {
-    logger.error({ err: error }, '[SendProformaTask] Error en la iteración del agente');
+    logger.error({ err: error }, `${SEND_PROFORMA_LOG_PREFIX} Error en la iteración del agente`);
   }
 }
 
 async function startSendProformaAgent(): Promise<void> {
   let isRunning = true;
-  let intervalId: ReturnType<typeof setInterval> | null = null;
+  let timerId: ReturnType<typeof setTimeout> | null = null;
 
   const handleSignal = (signal: NodeJS.Signals): void => {
-    logger.info('[SendProformaTask] Señal recibida: ' + signal);
+    logger.info(`${SEND_PROFORMA_LOG_PREFIX} Señal recibida: ${signal}`);
     isRunning = false;
 
-    if (intervalId) {
-      clearInterval(intervalId);
-      intervalId = null;
+    if (timerId) {
+      clearTimeout(timerId);
+      timerId = null;
     }
   };
 
   process.on('SIGINT', handleSignal);
   process.on('SIGTERM', handleSignal);
 
-  logger.info('[SendProformaTask] Agente de envío de proformas iniciado');
+  logger.info(`${SEND_PROFORMA_LOG_PREFIX} Agente de envío de proformas iniciado`);
 
-  try {
-    await runSendProformaIteration();
+  const scheduleNext = (): void => {
+    if (!isRunning) {
+      return;
+    }
 
-    intervalId = setInterval(async () => {
-      if (!isRunning) {
-        return;
-      }
-
+    timerId = setTimeout(async () => {
       try {
         await runSendProformaIteration();
       } catch (error) {
-        logger.error({ err: error }, 'Error en el ciclo del agente');
+        logger.error({ err: error }, `${SEND_PROFORMA_LOG_PREFIX} Error en el ciclo del agente`);
       }
+
+      scheduleNext();
     }, AGENT_POLL_INTERVAL_MS);
+  };
+
+  try {
+    await runSendProformaIteration();
+    scheduleNext();
 
     await new Promise<void>((resolvePromise) => {
       const waitForStop = setInterval(() => {
@@ -212,19 +355,19 @@ async function startSendProformaAgent(): Promise<void> {
       }, 250);
     });
   } finally {
-    if (intervalId) {
-      clearInterval(intervalId);
+    if (timerId) {
+      clearTimeout(timerId);
     }
 
     process.off('SIGINT', handleSignal);
     process.off('SIGTERM', handleSignal);
-    logger.info('[SendProformaTask] Agente de envío de proformas detenido');
+    logger.info(`${SEND_PROFORMA_LOG_PREFIX} Agente de envío de proformas detenido`);
   }
 }
 
 export { startSendProformaAgent };
 
 startSendProformaAgent().catch((error) => {
-  logger.error({ err: error }, 'Send proforma agent failed');
+  logger.error({ err: error }, `${SEND_PROFORMA_LOG_PREFIX} Send proforma agent failed`);
   process.exit(1);
 });
