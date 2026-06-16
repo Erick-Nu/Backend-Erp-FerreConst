@@ -132,9 +132,10 @@ type CreateSendProformaTaskDao = {
   sendprfmadocumento: string;
   sendemruc: string;
   sendemrznsocial: string;
-  sendemcorreo: string;
+  sendemcorreo: string | null;
   sendclntenombre: string;
-  sendclntecorreo: string;
+  sendclntecorreo: string | null;
+  sendclntetelefono: string | null;
   sendprfmatotal: number;
   sendsuidentificador: string;
   sendcjidentificador: string;
@@ -692,12 +693,13 @@ const SAVE_SEND_PROFORMA_TASK_QUERY = `
     sendemcorreo,
     sendclntenombre,
     sendclntecorreo,
+    sendclntetelefono,
     sendprfmatotal,
     sendsuidentificador,
     sendcjidentificador,
     sendmpnombre
   )
-  values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+  values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
   returning sendid
 `;
 
@@ -715,6 +717,7 @@ async function saveSendProformaTask(task: CreateSendProformaTaskDao): Promise<st
         task.sendemcorreo,
         task.sendclntenombre,
         task.sendclntecorreo,
+        task.sendclntetelefono,
         task.sendprfmatotal,
         task.sendsuidentificador,
         task.sendcjidentificador,

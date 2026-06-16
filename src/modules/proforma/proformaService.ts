@@ -215,18 +215,13 @@ function buildSendProformaTaskSnapshot(proforma: ProformaRowDao): CreateSendProf
       proforma.emrznsocial ?? '',
       INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
     );
-    const sendemcorreo = validateRequiredString(
-      proforma.emcorreo ?? '',
-      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
-    );
+    const sendemcorreo = proforma.emcorreo?.trim() ?? null;
     const sendclntenombre = validateRequiredString(
       proforma.clntenombre ?? '',
       INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
     );
-    const sendclntecorreo = validateRequiredString(
-      proforma.clntecorreo ?? '',
-      INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
-    );
+    const sendclntecorreo = proforma.clntecorreo?.trim() ?? null;
+    const sendclntetelefono = proforma.clntetelefono?.trim() ?? null;
     const sendsuidentificador = validateRequiredString(
       proforma.suidentificador ?? '',
       INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE,
@@ -254,6 +249,7 @@ function buildSendProformaTaskSnapshot(proforma: ProformaRowDao): CreateSendProf
       sendemcorreo,
       sendclntenombre,
       sendclntecorreo,
+      sendclntetelefono,
       sendprfmatotal,
       sendsuidentificador,
       sendcjidentificador,
