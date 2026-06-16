@@ -2,6 +2,8 @@ import { sql } from '../../../config/database.js';
 import { logger } from '../../../utils/logger.js';
 import type { CompanyRucResult, LowStockProductResult, UpsertAlertData } from './stockAlertModel.js';
 
+const STOCK_ALERT_LOG_PREFIX = '[stockAlertTask]';
+
 const FIND_LOW_STOCK_PRODUCTS_QUERY = `
   select
     s.stckemid,
@@ -31,7 +33,7 @@ async function findLowStockProductsByCompany(emid: string): Promise<LowStockProd
   try {
     return await sql.unsafe<LowStockProductResult[]>(FIND_LOW_STOCK_PRODUCTS_QUERY, [emid]);
   } catch (error) {
-    logger.error({ err: error, emid }, 'Error finding low stock products by company');
+    logger.error({ err: error, emid }, `${STOCK_ALERT_LOG_PREFIX} Error finding low stock products by company`);
     throw new Error('Error finding low stock products by company');
   }
 }
@@ -48,7 +50,7 @@ async function findCompanyIdByRuc(ruc: string): Promise<string | null> {
     const row = rows[0];
     return row?.emid ?? null;
   } catch (error) {
-    logger.error({ err: error, ruc }, 'Error finding company id by ruc');
+    logger.error({ err: error, ruc }, `${STOCK_ALERT_LOG_PREFIX} Error finding company id by ruc`);
     throw new Error('Error finding company id by ruc');
   }
 }
@@ -83,7 +85,7 @@ async function upsertAlert(alert: UpsertAlertData): Promise<string> {
     }
     return alertDB.alid;
   } catch (error) {
-    logger.error({ err: error, emid: alert.alemid, productId: alert.alprdtoid }, 'Error upserting alert');
+    logger.error({ err: error, emid: alert.alemid, productId: alert.alprdtoid }, `${STOCK_ALERT_LOG_PREFIX} Error upserting alert`);
     throw new Error('Error upserting alert');
   }
 }
@@ -125,7 +127,7 @@ async function hideObsoleteAlerts(emid: string): Promise<number> {
     const result = await sql.unsafe<{ alid: string }[]>(HIDE_OBSOLETE_ALERTS_QUERY, [emid]);
     return result.length;
   } catch (error) {
-    logger.error({ err: error, emid }, 'Error hiding obsolete alerts');
+    logger.error({ err: error, emid }, `${STOCK_ALERT_LOG_PREFIX} Error hiding obsolete alerts`);
     throw new Error('Error hiding obsolete alerts');
   }
 }

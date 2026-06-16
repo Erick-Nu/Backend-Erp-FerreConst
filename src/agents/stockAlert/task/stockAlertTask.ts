@@ -9,6 +9,7 @@ import { findStockAlertConfiguredCompanyRucValue } from '../data/stockAlertConfi
 
 const STOCK_ALERT_COMPANY_RUC_SEPARATOR = ';';
 const AGENT_POLL_INTERVAL_MS = 300000;
+const STOCK_ALERT_LOG_PREFIX = '[stockAlertTask]';
 
 async function findConfiguredCompanyRucs(): Promise<string[]> {
   try {
@@ -20,7 +21,7 @@ async function findConfiguredCompanyRucs(): Promise<string[]> {
 
     return rucValue.split(STOCK_ALERT_COMPANY_RUC_SEPARATOR);
   } catch (error) {
-    logger.error({ err: error }, '[StockAlertTask] Error al obtener RUCs configurados');
+    logger.error({ err: error }, `${STOCK_ALERT_LOG_PREFIX} Error al obtener RUCs configurados`);
     throw error;
   }
 }
@@ -34,7 +35,7 @@ async function processCompanyAlertBatch(emid: string): Promise<number> {
 
   logger.info(
     { emid, products: lowStockProducts.length },
-    '[StockAlertTask] Productos con stock bajo encontrados',
+    `${STOCK_ALERT_LOG_PREFIX} Productos con stock bajo encontrados`,
   );
 
   let createdAlerts = 0;
@@ -57,12 +58,12 @@ async function processCompanyAlertBatch(emid: string): Promise<number> {
       createdAlerts += 1;
       logger.info(
         { productId: product.stckprdtoid, branchId: product.stcksuid },
-        '[StockAlertTask] Alerta de stock bajo creada/actualizada',
+        `${STOCK_ALERT_LOG_PREFIX} Alerta de stock bajo creada/actualizada`,
       );
     } catch (error) {
       logger.error(
         { err: error, productId: product.stckprdtoid, emid },
-        '[StockAlertTask] Error al crear alerta de stock bajo',
+        `${STOCK_ALERT_LOG_PREFIX} Error al crear alerta de stock bajo`,
       );
     }
   }
@@ -75,11 +76,11 @@ async function runStockAlertIteration(): Promise<void> {
     const companyRucs = await findConfiguredCompanyRucs();
 
     if (companyRucs.length === 0) {
-      logger.info('[StockAlertTask] No hay RUCs configurados para el agente');
+      logger.info(`${STOCK_ALERT_LOG_PREFIX} No hay RUCs configurados para el agente`);
       return;
     }
 
-    logger.info('[StockAlertTask] RUCs configurados encontrados: ' + companyRucs.length);
+    logger.info(`${STOCK_ALERT_LOG_PREFIX} RUCs configurados encontrados: ${companyRucs.length}`);
     let totalAlerts = 0;
 
     for (const ruc of companyRucs) {
@@ -87,13 +88,13 @@ async function runStockAlertIteration(): Promise<void> {
         continue;
       }
 
-      logger.info('[StockAlertTask] Procesando empresa con RUC: ' + ruc);
+      logger.info(`${STOCK_ALERT_LOG_PREFIX} Procesando empresa con RUC: ${ruc}`);
 
       try {
         const emid = await findCompanyIdByRuc(ruc);
 
         if (!emid) {
-          logger.warn('[StockAlertTask] No se encontró empresa con RUC: ' + ruc);
+          logger.warn(`${STOCK_ALERT_LOG_PREFIX} No se encontró empresa con RUC: ${ruc}`);
           continue;
         }
 
@@ -102,7 +103,7 @@ async function runStockAlertIteration(): Promise<void> {
         if (hiddenCount > 0) {
           logger.info(
             { emid, hiddenCount },
-            '[StockAlertTask] Alertas obsoletas ocultadas',
+            `${STOCK_ALERT_LOG_PREFIX} Alertas obsoletas ocultadas`,
           );
         }
 
@@ -110,20 +111,20 @@ async function runStockAlertIteration(): Promise<void> {
         totalAlerts += alertsCreated;
         logger.info(
           { emid, alertsCreated },
-          '[StockAlertTask] Empresa procesada',
+          `${STOCK_ALERT_LOG_PREFIX} Empresa procesada`,
         );
       } catch (error) {
-        logger.error({ err: error, ruc }, '[StockAlertTask] Error al procesar empresa');
+        logger.error({ err: error, ruc }, `${STOCK_ALERT_LOG_PREFIX} Error al procesar empresa`);
       }
     }
 
     if (totalAlerts > 0) {
-      logger.info({ totalAlerts }, '[StockAlertTask] Alertas creadas/actualizadas en esta iteración');
+      logger.info({ totalAlerts }, `${STOCK_ALERT_LOG_PREFIX} Alertas creadas/actualizadas en esta iteración`);
     } else {
-      logger.info('[StockAlertTask] No se encontraron productos con stock bajo');
+      logger.info(`${STOCK_ALERT_LOG_PREFIX} No se encontraron productos con stock bajo`);
     }
   } catch (error) {
-    logger.error({ err: error }, '[StockAlertTask] Error en la iteración del agente');
+    logger.error({ err: error }, `${STOCK_ALERT_LOG_PREFIX} Error en la iteración del agente`);
   }
 }
 
@@ -132,7 +133,7 @@ async function startStockAlertAgent(): Promise<void> {
   let timerId: ReturnType<typeof setTimeout> | null = null;
 
   const handleSignal = (signal: NodeJS.Signals): void => {
-    logger.info('[StockAlertTask] Señal recibida: ' + signal);
+    logger.info(`${STOCK_ALERT_LOG_PREFIX} Señal recibida: ${signal}`);
     isRunning = false;
 
     if (timerId) {
@@ -144,7 +145,7 @@ async function startStockAlertAgent(): Promise<void> {
   process.on('SIGINT', handleSignal);
   process.on('SIGTERM', handleSignal);
 
-  logger.info('[StockAlertTask] Agente de alertas de stock iniciado');
+  logger.info(`${STOCK_ALERT_LOG_PREFIX} Agente de alertas de stock iniciado`);
 
   const scheduleNext = (): void => {
     if (!isRunning) {
@@ -153,17 +154,17 @@ async function startStockAlertAgent(): Promise<void> {
 
     timerId = setTimeout(async () => {
       try {
-        logger.info('[StockAlertTask] Ejecutando iteración programada');
+        logger.info(`${STOCK_ALERT_LOG_PREFIX} Ejecutando iteración programada`);
         await runStockAlertIteration();
       } catch (error) {
-        logger.error({ err: error }, 'Error en el ciclo del agente');
+        logger.error({ err: error }, `${STOCK_ALERT_LOG_PREFIX} Error en el ciclo del agente`);
       }
       scheduleNext();
     }, AGENT_POLL_INTERVAL_MS);
   };
 
   try {
-    logger.info('[StockAlertTask] Ejecutando iteración inicial');
+    logger.info(`${STOCK_ALERT_LOG_PREFIX} Ejecutando iteración inicial`);
     await runStockAlertIteration();
     scheduleNext();
 
@@ -182,13 +183,13 @@ async function startStockAlertAgent(): Promise<void> {
 
     process.off('SIGINT', handleSignal);
     process.off('SIGTERM', handleSignal);
-    logger.info('[StockAlertTask] Agente de alertas de stock detenido');
+    logger.info(`${STOCK_ALERT_LOG_PREFIX} Agente de alertas de stock detenido`);
   }
 }
 
 export { startStockAlertAgent };
 
 startStockAlertAgent().catch((error) => {
-  logger.error({ err: error }, 'Stock alert agent failed');
+  logger.error({ err: error }, `${STOCK_ALERT_LOG_PREFIX} Stock alert agent failed`);
   process.exit(1);
 });
