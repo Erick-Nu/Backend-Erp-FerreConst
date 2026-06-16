@@ -6,10 +6,11 @@ import { findSendProformaCompanyConfigRows } from '../data/sendProformaConfig.js
 
 const SEND_PROFORMA_EMAIL_USER_KEY = 'sendproforma.email.user';
 const SEND_PROFORMA_EMAIL_PASSWORD_KEY = 'sendproforma.email.password';
+const SEND_PROFORMA_EMAIL_LOG_PREFIX = '[sendProformaEmail]';
 const transporterByCompanyId: Record<string, Transporter> = {};
 
 async function findCompanyEmailCredentials(sendemid: string): Promise<{ emailUser: string; emailPassword: string }> {
-  logger.info('[SendProforma] Obteniendo credenciales de correo para empresa');
+  logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Obteniendo credenciales de correo para empresa`);
   const configRows = await findSendProformaCompanyConfigRows(sendemid);
 
   const configMap: Record<string, string> = {};
@@ -21,7 +22,7 @@ async function findCompanyEmailCredentials(sendemid: string): Promise<{ emailUse
   const emailPassword = configMap[SEND_PROFORMA_EMAIL_PASSWORD_KEY];
 
   if (!emailUser || !emailPassword) {
-    logger.error('[SendProforma] Configuración de correo incompleta para empresa: ' + sendemid);
+    logger.error(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Configuración de correo incompleta para empresa: ${sendemid}`);
     throw new Error(`Missing company email configuration for send proforma: ${sendemid}`);
   }
 
@@ -53,7 +54,7 @@ async function getCompanyTransporter(sendemid: string): Promise<Transporter> {
     return cachedTransporter;
   }
 
-  logger.info('[SendProforma] Creando nuevo transporter para empresa');
+  logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Creando nuevo transporter para empresa`);
   const { emailUser, emailPassword } = await findCompanyEmailCredentials(sendemid);
   const transporter = createAgentTransporter(emailUser, emailPassword);
 

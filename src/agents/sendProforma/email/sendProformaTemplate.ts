@@ -4,6 +4,7 @@ import { logger } from '../../../utils/logger.js';
 import type { SendProformaModel } from '../data/sendProformaModel.js';
 
 const SEND_PROFORMA_EMAIL_TEMPLATE_PATH = 'uploads/templates/send-proforma-email.html';
+const SEND_PROFORMA_EMAIL_LOG_PREFIX = '[sendProformaEmail]';
 let cachedEmailTemplate: string | null = null;
 
 function escapeHtml(value: string): string {
@@ -46,10 +47,10 @@ async function getEmailTemplate(): Promise<string> {
   }
 
   const templatePath = resolve(process.cwd(), SEND_PROFORMA_EMAIL_TEMPLATE_PATH);
-  logger.info('[SendProforma] Cargando plantilla de correo');
+  logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Cargando plantilla de correo`);
   const templateContent = await readFile(templatePath, 'utf-8');
   cachedEmailTemplate = templateContent;
-  logger.info('[SendProforma] Plantilla de correo cargada correctamente');
+  logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Plantilla de correo cargada correctamente`);
   return templateContent;
 }
 
@@ -64,7 +65,7 @@ async function buildSendProformaEmailBody(task: SendProformaModel): Promise<stri
     .replaceAll('{{pago}}', escapeHtml(task.sendmpnombre))
     .replaceAll('{{total}}', escapeHtml(formatCurrencyAmount(task.sendprfmatotal)))
     .replaceAll('{{emisor}}', escapeHtml(task.sendemrznsocial))
-    .replaceAll('{{emisorMail}}', escapeHtml(task.sendemcorreo));
+    .replaceAll('{{emisorMail}}', escapeHtml(task.sendemcorreo ?? 'No disponible'));
 }
 
 export {
