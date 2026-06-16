@@ -230,7 +230,6 @@ Notas importantes:
 - Si falta la configuracion del canal activo o tiene un valor inválido, el agente omite esa empresa.
 - `SMTP_FROM` si puede afectar el comportamiento actual porque se usa como remitente preferido del correo cuando esta definido.
 - `src/config/env.ts` recorta espacios en blanco y valida tipos numericos y booleanos.
-- Como el repo no incluye migraciones, si habilitas WhatsApp debes agregar manualmente la columna `sendclntetelefono` en la tabla `sendproforma`.
 
 ## Scripts disponibles
 
@@ -396,17 +395,6 @@ Dependencias operativas:
   - `sendproforma.email.password`
   - `sendproforma.whatsapp.active`
   - `sendproforma.whatsapp.api`
-- columna `sendclntetelefono` en la tabla `sendproforma`
-
-Comportamiento:
-
-- separa empresas por RUC usando `;`
-- si `sendproforma.email.active` es `true`, usa email y no ejecuta WhatsApp para esa empresa
-- si email no está activo y `sendproforma.whatsapp.active` es `true`, usa WhatsApp
-- el canal WhatsApp envia el PDF como base64 y conserva `filename` con el identificador de la proforma
-- si ningún canal está activo, omite la empresa
-- procesa lotes por empresa
-- corre una iteracion inicial y luego vuelve a ejecutar cada 4 minutos
 
 ### `stockAlert`
 
