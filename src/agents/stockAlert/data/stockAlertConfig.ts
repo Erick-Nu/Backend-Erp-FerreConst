@@ -1,6 +1,8 @@
 import { sql } from '../../../config/database.js';
 import { logger } from '../../../utils/logger.js';
 
+const STOCK_ALERT_LOG_PREFIX = '[stockAlertTask]';
+
 type ConfigRow = {
   cfclave: string;
   cfvalor: string;
@@ -19,7 +21,7 @@ async function findStockAlertConfiguredCompanyRucValue(): Promise<string | undef
     const row = rows[0];
     return row?.cfvalor;
   } catch (error) {
-    logger.error({ err: error }, 'Error finding stock alert configured companies');
+    logger.error({ err: error }, `${STOCK_ALERT_LOG_PREFIX} Error finding stock alert configured companies`);
     throw new Error('Error finding stock alert configured companies');
   }
 }
