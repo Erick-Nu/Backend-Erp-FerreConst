@@ -28,6 +28,12 @@ type DetailRow = {
   total: string;
 };
 
+type ProformaStatusBadgeColors = {
+  background: string;
+  text: string;
+  border: string;
+};
+
 const COLOR_BRAND_DARK = '#233746';
 const COLOR_DARK = '#1E2F3F';
 const COLOR_TEXT = '#242424';
@@ -65,6 +71,87 @@ function formatDate(value: Date): string {
 
 function formatQuantity(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+function getProformaStatusLabel(status: ProformaPdfInput['estado']): string {
+  if (status === 'pagada') {
+    return 'PAGADA';
+  }
+
+  if (status === 'anulada') {
+    return 'ANULADA';
+  }
+
+  return 'EMITIDA';
+}
+
+function getProformaStatusColors(status: ProformaPdfInput['estado']): ProformaStatusBadgeColors {
+  if (status === 'pagada') {
+    return {
+      background: '#E7F5EC',
+      text: '#1D6B45',
+      border: '#B8DDC8',
+    };
+  }
+
+  if (status === 'anulada') {
+    return {
+      background: '#FCE9E9',
+      text: '#A23A3A',
+      border: '#F2C4C4',
+    };
+  }
+
+  return {
+    background: '#E8EEF3',
+    text: '#233746',
+    border: '#C7D1DA',
+  };
+}
+
+function drawProformaStatusBadge(
+  document: PdfDocWithTables,
+  data: ProformaPdfInput,
+  fonts: ProformaPdfFontConfig,
+  invoiceX: number,
+  invoiceWidth: number,
+  topY: number,
+): void {
+  const label = getProformaStatusLabel(data.estado);
+  const colors = getProformaStatusColors(data.estado);
+  const fontSize = 7.4;
+  const paddingX = 10;
+  const paddingY = 4;
+  const badgeY = topY + 86;
+
+  applyFont(document, fonts.bold);
+  document.fontSize(fontSize);
+
+  const textWidth = document.widthOfString(label);
+  const badgeWidth = textWidth + (paddingX * 2);
+  const badgeHeight = fontSize + (paddingY * 2);
+  const badgeX = invoiceX + invoiceWidth - badgeWidth;
+
+  document
+    .roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 9)
+    .fillColor(colors.background)
+    .fill();
+
+  document
+    .roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 9)
+    .lineWidth(0.6)
+    .strokeColor(colors.border)
+    .stroke();
+
+  applyFont(document, fonts.bold);
+  document
+    .fillColor(colors.text)
+    .fontSize(fontSize)
+    .text(label, badgeX, badgeY + paddingY - 0.5, {
+      width: badgeWidth,
+      align: 'center',
+      lineBreak: false,
+    });
 }
 
 function applyFont(document: PdfDocWithTables, fontPathOrName: string): void {
@@ -293,6 +380,8 @@ function drawHeader(
       align: 'right',
       lineBreak: false,
     });
+
+  drawProformaStatusBadge(document, data, fonts, invoiceX, invoiceWidth, topY);
 
   // Bloque inferior: cliente y resumen
   const infoY = 150;

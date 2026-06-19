@@ -8,6 +8,7 @@ import {
   searchProforma,
   searchProformaPdf,
   searchProformas,
+  sendProformaData,
 } from './proformaController.js';
 
 const proformaRouter = Router();
@@ -19,5 +20,6 @@ proformaRouter.get('/:id', authenticate, searchProforma);
 proformaRouter.put('/:id', authenticate, replaceProformaData);
 proformaRouter.patch('/:id/pay', authenticate, payProformaData);
 proformaRouter.patch('/:id/cancel', authenticate, cancelProformaData);
+proformaRouter.post('/:id/send', authenticate, sendProformaData);
 
 export { proformaRouter };

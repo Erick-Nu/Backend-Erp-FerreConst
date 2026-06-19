@@ -1,3 +1,5 @@
+import type { ProformaStatus } from '../../config/databaseTypes.js';
+
 type ProformaPdfCompanyData = {
   ruc: string;
   razonSocial: string;
@@ -35,6 +37,7 @@ type ProformaPdfBrandingData = {
 type ProformaPdfInput = {
   identificador: string;
   fechaEmision: Date;
+  estado: ProformaStatus;
   empresa: ProformaPdfCompanyData;
   cliente: ProformaPdfClientData;
   metodoPago: string;

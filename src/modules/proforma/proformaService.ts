@@ -47,6 +47,21 @@ import type {
   ProformaResponseDto,
   ReplaceProformaDto,
 } from './proformaDto.js';
+import { sendEmail } from '../../services/nodemailer.js';
+import { getCompanyTransporter } from '../../agents/sendProforma/email/sendProformaTransporter.js';
+import {
+  buildSendProformaEmailBody,
+  resolveDocumentPath,
+  validateDocumentAccess,
+} from '../../agents/sendProforma/email/sendProformaTemplate.js';
+import { sendProformaByWhatsapp } from '../../agents/sendProforma/whatsapp/sendProformaWhatsappTransporter.js';
+import {
+  findSendProformaCompanyEmailActive,
+  findSendProformaCompanyWhatsappActive,
+  findSendProformaCompanyWhatsappApi,
+} from '../../agents/sendProforma/data/sendProformaConfig.js';
+import type { SendProformaModel } from '../../agents/sendProforma/data/sendProformaModel.js';
+import { env } from '../../config/env.js';
 
 const EMPTY_PROFORMA_ID_MESSAGE = 'Proforma id is required';
 const EMPTY_BRANCH_ID_MESSAGE = 'Branch id is required';
@@ -95,6 +110,11 @@ const INVALID_PROFORMA_SEND_SNAPSHOT_MESSAGE = 'Proforma does not have complete 
 const INVALID_PROFORMA_STATUS_EDIT_MESSAGE = 'Only emitted proformas can be edited';
 const INVALID_PROFORMA_STATUS_PAY_MESSAGE = 'Only emitted proformas can be paid';
 const INVALID_PROFORMA_STATUS_CANCEL_MESSAGE = 'Only emitted proformas can be canceled';
+const INVALID_PROFORMA_STATUS_SEND_MESSAGE = 'Cannot send a canceled proforma';
+const INVALID_PROFORMA_SEND_CHANNEL_MESSAGE = 'Channel must be email or whatsapp';
+const INVALID_PROFORMA_CHANNEL_NOT_ACTIVE_MESSAGE = 'The requested channel is not active for this company';
+const INVALID_PROFORMA_SEND_EMAIL_ADDRESS_MESSAGE = 'Missing sender or recipient email for send proforma';
+const INVALID_PROFORMA_WHATSAPP_TOKEN_MESSAGE = 'WHATSAPP_APICONSULT_TOKEN is required for whatsapp channel';
 const INVALID_PROFORMA_EMPTY_ITEMS_MESSAGE = 'Proforma must contain at least one item';
 const INVALID_PROFORMA_DETAIL_REFERENCE_MESSAGE = 'Proforma detail does not belong to proforma';
 const INVALID_PROFORMA_DUPLICATED_DETAIL_MESSAGE = 'Proforma has duplicated detail ids';
@@ -261,7 +281,7 @@ function buildSendProformaTaskSnapshot(proforma: ProformaRowDao): CreateSendProf
 }
 
 function validateFindProformasParams(params: FindProformasParamsDto): FindProformasParamsDto {
-  const { page, pageSize } = params;
+  const { page, pageSize, search, status } = params;
 
   if (!Number.isInteger(page) || page < 1) {
     throw new Error(INVALID_PAGE_MESSAGE);
@@ -634,6 +654,7 @@ function mapProformaToPdfInput(proforma: ProformaRowDao, items: ProformaItemRowD
   return {
     identificador: proforma.prfmaidentificador,
     fechaEmision: proforma.prfmafchactualizacion ?? proforma.prfmafchregistro ?? new Date(),
+    estado: proforma.prfmaestado,
     empresa,
     cliente,
     metodoPago: proforma.mpnombre ?? 'No especificado',
@@ -961,6 +982,39 @@ async function buildProformaResponseOrThrow(
   return mapProformaResponse(proformaDB, itemsDB, documentoPdf);
 }
 
+async function regenerateProformaAfterStatusChange(
+  companyId: string,
+  proformaId: string,
+  items?: ProformaItemRowDao[],
+): Promise<ProformaRowDao> {
+  const proformaDB = await findProformaById({
+    prfmaemid: companyId,
+    prfmaid: proformaId,
+  });
+
+  if (!proformaDB) {
+    throw new Error(INVALID_PROFORMA_NOT_FOUND_MESSAGE);
+  }
+
+  const itemsDB = items ?? await findProformaItems({
+    prfmaemid: companyId,
+    prfmaid: proformaId,
+  });
+
+  await generateProformaPdfDocument(proformaDB, itemsDB);
+
+  const refreshedProformaDB = await findProformaById({
+    prfmaemid: companyId,
+    prfmaid: proformaId,
+  });
+
+  if (!refreshedProformaDB) {
+    throw new Error(INVALID_PROFORMA_NOT_FOUND_MESSAGE);
+  }
+
+  return refreshedProformaDB;
+}
+
 async function readProformas(
   params: FindProformasParamsDto,
   user: LoginUserDto,
@@ -1267,14 +1321,7 @@ async function payProforma(proforma: ProformaActionDto, user: LoginUserDto): Pro
       'pagada',
     );
 
-    const paidProformaDB = await findProformaById({
-      prfmaemid: user.usemid,
-      prfmaid,
-    });
-
-    if (!paidProformaDB) {
-      throw new Error(INVALID_PROFORMA_NOT_FOUND_MESSAGE);
-    }
+    const paidProformaDB = await regenerateProformaAfterStatusChange(user.usemid, prfmaid, itemsDB);
 
     const sendProformaTask = buildSendProformaTaskSnapshot(paidProformaDB);
     await saveSendProformaTask(sendProformaTask);
@@ -1322,6 +1369,8 @@ async function cancelProforma(
       'anulada',
     );
 
+    await regenerateProformaAfterStatusChange(user.usemid, prfmaid);
+
     return await buildProformaResponseOrThrow(user.usemid, prfmaid);
   } catch (error) {
     logger.error(
@@ -1337,12 +1386,138 @@ async function cancelProforma(
   }
 }
 
+function buildProformaSnapshot(proforma: ProformaRowDao): SendProformaModel {
+  return {
+    sendid: '',
+    sendemid: proforma.prfmaemid,
+    sendprfmaid: proforma.prfmaid,
+    sendprfmaidentificador: proforma.prfmaidentificador ?? '',
+    sendprfmadocumento: proforma.prfmadocumento ?? '',
+    sendemruc: proforma.emruc ?? '',
+    sendemrznsocial: proforma.emrznsocial ?? '',
+    sendemcorreo: proforma.emcorreo?.trim() ?? null,
+    sendclntenombre: proforma.clntenombre ?? '',
+    sendclntecorreo: proforma.clntecorreo?.trim() ?? null,
+    sendclntetelefono: proforma.clntetelefono?.trim() ?? null,
+    sendprfmatotal: parseNumericValue(proforma.prfmatotal),
+    sendsuidentificador: proforma.suidentificador ?? '',
+    sendcjidentificador: proforma.cjidentificador ?? '',
+    sendmpnombre: proforma.mpnombre ?? '',
+    sendestado: 'pendiente',
+    sendintentos: 0,
+    senderror: null,
+    sendfchcreacion: new Date(),
+    sendfchactualizacion: new Date(),
+  };
+}
+
+async function sendProformaEmail(snapshot: SendProformaModel): Promise<void> {
+  const fromAddress = env.smtpFrom ?? snapshot.sendemcorreo;
+  const recipientEmail = snapshot.sendclntecorreo;
+
+  if (!fromAddress || !recipientEmail) {
+    throw new Error(INVALID_PROFORMA_SEND_EMAIL_ADDRESS_MESSAGE);
+  }
+
+  const documentPath = resolveDocumentPath(snapshot.sendprfmadocumento);
+  const emailHtml = await buildSendProformaEmailBody(snapshot);
+  const transporter = await getCompanyTransporter(snapshot.sendemid);
+
+  await validateDocumentAccess(documentPath);
+
+  await sendEmail(transporter, {
+    from: fromAddress,
+    to: [recipientEmail],
+    subject: `Proforma ${snapshot.sendprfmaidentificador}`,
+    html: emailHtml,
+    text: `Estimado/a ${snapshot.sendclntenombre}, adjuntamos su proforma ${snapshot.sendprfmaidentificador}.`,
+    attachments: [
+      {
+        filename: `${snapshot.sendprfmaidentificador}.pdf`,
+        path: documentPath,
+        contentType: 'application/pdf',
+      },
+    ],
+  });
+}
+
+async function sendProformaWhatsapp(snapshot: SendProformaModel): Promise<void> {
+  const whatsappApiInstance = await findSendProformaCompanyWhatsappApi(snapshot.sendemid);
+  if (!whatsappApiInstance) {
+    throw new Error('WhatsApp API instance is not configured for this company');
+  }
+
+  await sendProformaByWhatsapp(snapshot, whatsappApiInstance);
+}
+
+async function sendProforma(
+  prfmaid: string,
+  channel: string,
+  user: LoginUserDto,
+): Promise<void> {
+  const validatedId = prfmaid.trim();
+  if (validatedId.length === 0) {
+    throw createErrorWithStatusCode(EMPTY_PROFORMA_ID_MESSAGE, BAD_REQUEST_STATUS_CODE);
+  }
+
+  if (channel !== 'email' && channel !== 'whatsapp') {
+    throw createErrorWithStatusCode(INVALID_PROFORMA_SEND_CHANNEL_MESSAGE, BAD_REQUEST_STATUS_CODE);
+  }
+
+  await validateCompanyAndUserAccess(user, {});
+
+  const proforma = await findProformaById({
+    prfmaid: validatedId,
+    prfmaemid: user.usemid,
+  });
+  if (!proforma) {
+    throw createErrorWithStatusCode(INVALID_PROFORMA_NOT_FOUND_MESSAGE, 404);
+  }
+
+  if (proforma.prfmaestado === 'anulada') {
+    throw createErrorWithStatusCode(INVALID_PROFORMA_STATUS_SEND_MESSAGE, BAD_REQUEST_STATUS_CODE);
+  }
+
+  if (channel === 'email') {
+    const isEmailActive = await findSendProformaCompanyEmailActive(user.usemid);
+    if (!isEmailActive) {
+      throw createErrorWithStatusCode(
+        INVALID_PROFORMA_CHANNEL_NOT_ACTIVE_MESSAGE,
+        BAD_REQUEST_STATUS_CODE,
+      );
+    }
+
+    const snapshot = buildProformaSnapshot(proforma);
+    await sendProformaEmail(snapshot);
+    return;
+  }
+
+  const isWhatsappActive = await findSendProformaCompanyWhatsappActive(user.usemid);
+  if (!isWhatsappActive) {
+    throw createErrorWithStatusCode(
+      INVALID_PROFORMA_CHANNEL_NOT_ACTIVE_MESSAGE,
+      BAD_REQUEST_STATUS_CODE,
+    );
+  }
+
+  if (!env.whatsappApiconsultToken) {
+    throw createErrorWithStatusCode(
+      INVALID_PROFORMA_WHATSAPP_TOKEN_MESSAGE,
+      BAD_REQUEST_STATUS_CODE,
+    );
+  }
+
+  const snapshot = buildProformaSnapshot(proforma);
+  await sendProformaWhatsapp(snapshot);
+}
+
 export {
+  cancelProforma,
   createProforma,
-  readProformas,
+  payProforma,
   readProforma,
   readProformaPdfDocument,
+  readProformas,
   replaceProforma,
-  payProforma,
-  cancelProforma,
+  sendProforma,
 };

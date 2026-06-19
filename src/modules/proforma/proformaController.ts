@@ -86,6 +86,15 @@ const searchProformas: RequestHandler = async (req, res, next) => {
       page,
       pageSize,
     };
+
+    if (typeof searchQuery === 'string') {
+      params.search = searchQuery;
+    }
+
+    if (typeof statusQuery === 'string' && isValidProformaStatus(statusQuery)) {
+      params.status = statusQuery;
+    }
+
     const user: LoginUserDto = req.auth!;
 
     const proformasDB = await readProformas(params, user);
@@ -252,12 +261,38 @@ const cancelProformaData: RequestHandler = async (req, res, next) => {
   }
 };
 
+const sendProformaData: RequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (typeof id !== 'string') {
+      res.status(400).json({ message: 'Proforma id is required' });
+      return;
+    }
+
+    const { channel } = req.body;
+
+    if (typeof channel !== 'string' || (channel !== 'email' && channel !== 'whatsapp')) {
+      res.status(400).json({ message: 'Channel must be email or whatsapp' });
+      return;
+    }
+
+    const user: LoginUserDto = req.auth!;
+    await sendProforma(id, channel, user);
+
+    res.status(200).json({ message: `Proforma sent successfully by ${channel}` });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export {
+  cancelProformaData,
+  payProformaData,
   registerProforma,
-  searchProformas,
+  replaceProformaData,
   searchProforma,
   searchProformaPdf,
-  replaceProformaData,
-  payProformaData,
-  cancelProformaData,
+  searchProformas,
+  sendProformaData,
 };
