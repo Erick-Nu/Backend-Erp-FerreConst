@@ -65,17 +65,17 @@ const searchProformas: RequestHandler = async (req, res, next) => {
     const statusQuery = req.query.status;
 
     if (Array.isArray(searchQuery)) {
-      res.status(400).json({ message: 'Search must be a string' });
+      res.status(400).json({ message: 'La busqueda debe ser un texto' });
       return;
     }
 
     if (Array.isArray(statusQuery)) {
-      res.status(400).json({ message: 'Status must be a string' });
+      res.status(400).json({ message: 'El estado debe ser un texto' });
       return;
     }
 
     if (typeof statusQuery === 'string' && !isValidProformaStatus(statusQuery)) {
-      res.status(400).json({ message: 'Status must be emitida, pagada or anulada' });
+      res.status(400).json({ message: 'El estado debe ser emitida, pagada o anulada' });
       return;
     }
 
@@ -110,7 +110,7 @@ const searchProforma: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Proforma id is required' });
+      res.status(400).json({ message: 'El id de proforma es requerido' });
       return;
     }
 
@@ -122,7 +122,7 @@ const searchProforma: RequestHandler = async (req, res, next) => {
     const proformaDB = await readProforma(proforma, user);
 
     if (!proformaDB) {
-      res.status(404).json({ message: 'Proforma not found' });
+      res.status(404).json({ message: 'Proforma no encontrada' });
       return;
     }
 
@@ -137,7 +137,7 @@ const searchProformaPdf: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Proforma id is required' });
+      res.status(400).json({ message: 'El id de proforma es requerido' });
       return;
     }
 
@@ -149,12 +149,12 @@ const searchProformaPdf: RequestHandler = async (req, res, next) => {
     const proformaPdfDB = await readProformaPdfDocument(proforma, user);
 
     if (!proformaPdfDB) {
-      res.status(404).json({ message: 'Proforma not found' });
+      res.status(404).json({ message: 'Proforma no encontrada' });
       return;
     }
 
     if (!proformaPdfDB.proforma.documento.docurl) {
-      res.status(404).json({ message: 'Proforma pdf document not found' });
+      res.status(404).json({ message: 'Documento PDF de proforma no encontrado' });
       return;
     }
 
@@ -169,7 +169,7 @@ const replaceProformaData: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Proforma id is required' });
+      res.status(400).json({ message: 'El id de proforma es requerido' });
       return;
     }
 
@@ -197,7 +197,7 @@ const replaceProformaData: RequestHandler = async (req, res, next) => {
     const updatedProforma = await replaceProforma(proforma, user);
 
     if (!updatedProforma) {
-      res.status(404).json({ message: 'Proforma not found' });
+      res.status(404).json({ message: 'Proforma no encontrada' });
       return;
     }
 
@@ -212,7 +212,7 @@ const payProformaData: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Proforma id is required' });
+      res.status(400).json({ message: 'El id de proforma es requerido' });
       return;
     }
 
@@ -224,7 +224,7 @@ const payProformaData: RequestHandler = async (req, res, next) => {
     const updatedProforma = await payProforma(proforma, user);
 
     if (!updatedProforma) {
-      res.status(404).json({ message: 'Proforma not found' });
+      res.status(404).json({ message: 'Proforma no encontrada' });
       return;
     }
 
@@ -239,7 +239,7 @@ const cancelProformaData: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Proforma id is required' });
+      res.status(400).json({ message: 'El id de proforma es requerido' });
       return;
     }
 
@@ -251,7 +251,7 @@ const cancelProformaData: RequestHandler = async (req, res, next) => {
     const updatedProforma = await cancelProforma(proforma, user);
 
     if (!updatedProforma) {
-      res.status(404).json({ message: 'Proforma not found' });
+      res.status(404).json({ message: 'Proforma no encontrada' });
       return;
     }
 
@@ -266,21 +266,21 @@ const sendProformaData: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Proforma id is required' });
+      res.status(400).json({ message: 'El id de proforma es requerido' });
       return;
     }
 
     const { channel } = req.body;
 
     if (typeof channel !== 'string' || (channel !== 'email' && channel !== 'whatsapp')) {
-      res.status(400).json({ message: 'Channel must be email or whatsapp' });
+      res.status(400).json({ message: 'El canal debe ser email o whatsapp' });
       return;
     }
 
     const user: LoginUserDto = req.auth!;
     await sendProforma(id, channel, user);
 
-    res.status(200).json({ message: `Proforma sent successfully by ${channel}` });
+    res.status(200).json({ message: `Proforma enviada exitosamente por ${channel}` });
   } catch (error) {
     next(error);
   }
