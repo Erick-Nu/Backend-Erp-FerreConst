@@ -28,6 +28,8 @@ type UpdateClientDto = {
 type FindClientsParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type ClientResponseDto = {

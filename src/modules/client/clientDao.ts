@@ -30,6 +30,8 @@ type FindClientByEmailDao = {
 type FindClientsParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type UpdateColumnClientDao = {
@@ -212,6 +214,84 @@ const FIND_CLIENT_BY_EMAIL_QUERY = `
   where clnteemid = $1 and lower(trim(clntecorreo)) = lower(trim($2))
 `;
 
+type ClientQueryValue = string | number;
+
+function buildFindClientsWhereClause(
+  companyId: string,
+  params: Pick<FindClientsParamsDao, 'search' | 'status'>,
+): { clause: string; values: ClientQueryValue[] } {
+  const conditions = ['clnteemid = $1'];
+  const values: ClientQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`clnteestado = $${values.length}`);
+  } else {
+    conditions.push(`clnteestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(clntenombre)) like $${searchParamIndex}
+      or lower(trim(clnteidentificacion)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindClientsQuery(
+  params: FindClientsParamsDao,
+  companyId: string,
+): { query: string; values: ClientQueryValue[] } {
+  const where = buildFindClientsWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select
+      clnteid,
+      clnteemid,
+      clntetipoidentificacion,
+      clnteidentificacion,
+      clntenombre,
+      clntecorreo,
+      clntedireccion,
+      clntetelefono,
+      clntefchregistro,
+      clnteestado
+    from cliente
+    where ${where.clause}
+    order by clntefchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountClientsQuery(
+  params: FindClientsParamsDao,
+  companyId: string,
+): { query: string; values: ClientQueryValue[] } {
+  const where = buildFindClientsWhereClause(companyId, params);
+  const query = `
+    select count(*)::int as total
+    from cliente
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
+
 async function findClientByEmail(client: FindClientByEmailDao): Promise<ClientRowDao | null> {
   try {
     const result = await sql.unsafe<ClientRowDao[]>(FIND_CLIENT_BY_EMAIL_QUERY, [
@@ -238,46 +318,21 @@ async function findClientByEmail(client: FindClientByEmailDao): Promise<ClientRo
   }
 }
 
-const FIND_CLIENTS_QUERY = `
-  select
-    clnteid,
-    clnteemid,
-    clntetipoidentificacion,
-    clnteidentificacion,
-    clntenombre,
-    clntecorreo,
-    clntedireccion,
-    clntetelefono,
-    clntefchregistro,
-    clnteestado
-  from cliente
-  where clnteemid = $1
-  order by clntefchregistro desc
-  limit $2
-  offset $3
-`;
-
-const COUNT_CLIENTS_QUERY = `
-  select count(*)::int as total
-  from cliente
-  where clnteemid = $1
-`;
-
 async function findClients(
   params: FindClientsParamsDao,
   companyId: string,
 ): Promise<FindClientsResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<ClientRowDao[]>(FIND_CLIENTS_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findClientsQuery = buildFindClientsQuery(params, companyId);
+    const countClientsQuery = buildCountClientsQuery(params, companyId);
+
+    const [result, clientsTotalDB] = await Promise.all([
+      sql.unsafe<ClientRowDao[]>(findClientsQuery.query, findClientsQuery.values),
+      sql.unsafe<{ total: number }[]>(countClientsQuery.query, countClientsQuery.values),
     ]);
 
-    const clientsTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_CLIENTS_QUERY, [companyId]);
     const totalItems = clientsTotalDB[0];
 
     if (!totalItems) {
@@ -294,7 +349,7 @@ async function findClients(
 
     return clientsDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding clients');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding clients');
     throw new Error('Error finding clients');
   }
 }

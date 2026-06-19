@@ -7,6 +7,7 @@ import type {
   UpdateClientDto,
 } from './clientDto.js';
 import { createClient, readClient, readClients, updateClient } from './clientService.js';
+import { isValidStatus } from '../../utils/validation.js';
 
 type UpdateClientRequestBody = Omit<UpdateClientDto, 'clnteid'>;
 
@@ -45,6 +46,23 @@ const searchClients: RequestHandler = async (req, res, next) => {
   try {
     const pageQuery = req.query.page;
     const pageSizeQuery = req.query.pageSize;
+    const searchQuery = req.query.search;
+    const statusQuery = req.query.status;
+
+    if (Array.isArray(searchQuery)) {
+      res.status(400).json({ message: 'Search must be a string' });
+      return;
+    }
+
+    if (Array.isArray(statusQuery)) {
+      res.status(400).json({ message: 'Status must be a string' });
+      return;
+    }
+
+    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      return;
+    }
 
     const page = Number(pageQuery);
     const pageSize = Number(pageSizeQuery);
@@ -53,6 +71,15 @@ const searchClients: RequestHandler = async (req, res, next) => {
       page,
       pageSize,
     };
+
+    if (typeof searchQuery === 'string') {
+      params.search = searchQuery;
+    }
+
+    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+      params.status = statusQuery;
+    }
+
     const user: LoginUserDto = req.auth!;
     const clientsDB = await readClients(params, user);
 
