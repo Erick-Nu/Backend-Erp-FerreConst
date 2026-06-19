@@ -27,6 +27,8 @@ type FindProformaDto = {
 type FindProformasParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: ProformaStatus;
 };
 
 type ReplaceProformaItemDto = CreateProformaItemDto & {

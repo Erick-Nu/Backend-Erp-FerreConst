@@ -56,6 +56,8 @@ type FindProformaByIdDao = {
 type FindProformasParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: ProformaStatus;
 };
 
 type ProformaRowDao = {
@@ -124,6 +126,8 @@ type FindProformasResponseDao = {
   totalItems: number;
   totalPages: number;
 };
+
+type ProformaQueryValue = string | number;
 
 type CreateSendProformaTaskDao = {
   sendemid: string;
@@ -356,21 +360,106 @@ const COUNT_PROFORMAS_QUERY = `
   where prfmaemid = $1
 `;
 
+function buildFindProformasWhereClause(
+  companyId: string,
+  params: Pick<FindProformasParamsDao, 'search' | 'status'>,
+): { clause: string; values: ProformaQueryValue[] } {
+  const conditions = ['p.prfmaemid = $1'];
+  const values: ProformaQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`p.prfmaestado = $${values.length}`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(p.prfmaidentificador)) like $${searchParamIndex}
+      or lower(trim(cl.clntenombre)) like $${searchParamIndex}
+      or lower(trim(cl.clnteidentificacion)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindProformasQuery(
+  params: FindProformasParamsDao,
+  companyId: string,
+): { query: string; values: ProformaQueryValue[] } {
+  const where = buildFindProformasWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select
+      p.prfmaid,
+      p.prfmaidentificador,
+      p.prfmaestado,
+      p.prfmafchregistro,
+      p.prfmaclnteid,
+      cl.clntenombre,
+      cl.clnteidentificacion,
+      p.prfmampid,
+      mp.mpnombre,
+      p.prfmatotal
+    from proforma p
+    left join cliente cl
+      on cl.clnteid = p.prfmaclnteid
+      and cl.clnteemid = p.prfmaemid
+    left join metodopago mp
+      on mp.mpid = p.prfmampid
+      and mp.mpemid = p.prfmaemid
+    where ${where.clause}
+    order by p.prfmafchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountProformasQuery(
+  params: FindProformasParamsDao,
+  companyId: string,
+): { query: string; values: ProformaQueryValue[] } {
+  const where = buildFindProformasWhereClause(companyId, params);
+
+  const query = `
+    select count(*)::int as total
+    from proforma p
+    left join cliente cl
+      on cl.clnteid = p.prfmaclnteid
+      and cl.clnteemid = p.prfmaemid
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
+
 async function findProformas(
   params: FindProformasParamsDao,
   companyId: string
 ): Promise<FindProformasResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const items = await sql.unsafe<ProformaListItemRowDao[]>(FIND_PROFORMAS_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findProformasQuery = buildFindProformasQuery(params, companyId);
+    const countProformasQuery = buildCountProformasQuery(params, companyId);
+
+    const [items, totalResult] = await Promise.all([
+      sql.unsafe<ProformaListItemRowDao[]>(findProformasQuery.query, findProformasQuery.values),
+      sql.unsafe<{ total: number }[]>(countProformasQuery.query, countProformasQuery.values),
     ]);
 
-    const totalResult = await sql.unsafe<{ total: number }[]>(COUNT_PROFORMAS_QUERY, [companyId]);
     const totalItems = totalResult[0];
 
     if (!totalItems) {
@@ -385,7 +474,7 @@ async function findProformas(
       totalPages: Math.ceil(totalItems.total / pageSize),
     };
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding proformas');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding proformas');
     throw new Error('Error finding proformas');
   }
 }

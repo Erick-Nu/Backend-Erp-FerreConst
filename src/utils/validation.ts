@@ -1,4 +1,4 @@
-import type { Identification, Role, Status } from '../config/databaseTypes.js';
+import type { Identification, ProformaStatus, Role, Status } from '../config/databaseTypes.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NAME_PATTERN = /^[\p{L}\s]+$/u;
@@ -16,7 +16,7 @@ const INVALID_NAME_MESSAGE = 'Name must contain only letters and spaces';
 const INVALID_NUMBER_MESSAGE = 'Value must be a valid number';
 const INVALID_PASSWORD_MESSAGE = 'Password must be at least 8 characters';
 const INVALID_ROLE_MESSAGE = 'Role must be administrador, jefe or empleado';
-const INVALID_STATUS_MESSAGE = 'Status must be activo, inactivo or eliminado';
+const INVALID_STATUS_MESSAGE = 'Status must be activo or inactivo';
 const INVALID_RUC_MESSAGE = 'RUC must be valid';
 const INVALID_TEXT_MESSAGE = 'Text must contain only letters and spaces';
 const INVALID_COMPANY_CODE_MESSAGE = 'Company code must be exactly 4 alphanumeric characters';
@@ -27,7 +27,8 @@ const MIN_PASSWORD_LENGTH = 8;
 const EMPTY_ROLE_MESSAGE = 'Role is required';
 const EMPTY_STATUS_MESSAGE = 'Status is required';
 const ROLE_VALUES: Role[] = ['administrador', 'jefe', 'empleado'];
-const STATUS_VALUES: Status[] = ['activo', 'inactivo', 'eliminado'];
+const STATUS_VALUES: Status[] = ['activo', 'inactivo'];
+const PROFORMA_STATUS_VALUES: ProformaStatus[] = ['emitida', 'pagada', 'anulada'];
 
 function cleanString(value: string): string {
   const cleanedValue = value.trim();
@@ -259,6 +260,10 @@ function isValidStatus(value: string): value is Status {
   return STATUS_VALUES.includes(value as Status);
 }
 
+function isValidProformaStatus(value: string): value is ProformaStatus {
+  return PROFORMA_STATUS_VALUES.includes(value as ProformaStatus);
+}
+
 function isValidRuc(value: string): boolean {
   const cleanedValue = cleanString(value);
 
@@ -277,6 +282,8 @@ export {
   validateRequiredString,
   validateRole,
   validateStatus,
+  isValidStatus,
+  isValidProformaStatus,
   validateRuc,
   validateText,
   validateCodeCompany,
