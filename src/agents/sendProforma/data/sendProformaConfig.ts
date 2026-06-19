@@ -42,7 +42,7 @@ async function findSendProformaCompanyConfigRows(sendemid: string): Promise<Conf
     return await sql.unsafe<ConfigRow[]>(FIND_SEND_PROFORMA_COMPANY_CONFIG_ROWS_QUERY, [sendemid]);
   } catch (error) {
     logger.error({ err: error, sendemid }, `${SEND_PROFORMA_LOG_PREFIX} Error finding send proforma company config`);
-    throw new Error('Error finding send proforma company config');
+    throw new Error('Error al buscar la configuracion de envio de proforma de la empresa');
   }
 }
 

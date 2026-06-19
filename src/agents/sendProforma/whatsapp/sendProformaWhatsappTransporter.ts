@@ -39,12 +39,12 @@ async function readDocumentAsBase64(documentPath: string): Promise<string> {
 
 function normalizeWhatsappPhone(phone: string | null): string {
   if (typeof phone !== 'string') {
-    throw new Error('Client phone is required for whatsapp send proforma');
+    throw new Error('El telefono del cliente es requerido para enviar proforma por WhatsApp');
   }
 
   const cleanedPhone = phone.trim();
   if (!/^09\d{8}$/.test(cleanedPhone)) {
-    throw new Error('Client phone must be a valid Ecuador mobile number for whatsapp send proforma');
+    throw new Error('El telefono del cliente debe ser un numero movil valido de Ecuador para enviar proforma por WhatsApp');
   }
 
   return `593${cleanedPhone.slice(1)}`;
@@ -57,7 +57,7 @@ function buildDocumentFileName(task: SendProformaModel): string {
 async function sendProformaByWhatsapp(task: SendProformaModel, instance: string): Promise<void> {
   const apiToken = env.whatsappApiconsultToken;
   if (!apiToken) {
-    throw new Error('WHATSAPP_APICONSULT_TOKEN is required for whatsapp send proforma');
+    throw new Error('WHATSAPP_APICONSULT_TOKEN es requerido para enviar proforma por WhatsApp');
   }
 
   const documentPath = resolveDocumentPath(task.sendprfmadocumento);
@@ -104,7 +104,7 @@ async function sendProformaByWhatsapp(task: SendProformaModel, instance: string)
   }
 
   if (responseData.success !== true) {
-    throw new Error(responseData.provider?.message ?? 'Whatsapp send proforma request was not successful');
+    throw new Error(responseData.provider?.message ?? 'La solicitud de envio de proforma por WhatsApp no fue exitosa');
   }
 
   logger.info(
