@@ -18,19 +18,19 @@ import {
   updateConfigByKey,
 } from './configDao.js';
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_CONFIG_KEY_MESSAGE = 'Config key is required';
-const EMPTY_CONFIG_VALUE_MESSAGE = 'Config value is required';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const INVALID_USER_NOT_FOUND_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or admin';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const INVALID_CONFIG_EXISTS_MESSAGE = 'Config already exists with that key';
-const EMPTY_UPDATE_CONFIG_MESSAGE = 'At least one field is required to update config';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_CONFIG_KEY_MESSAGE = 'La clave de configuracion es requerida';
+const EMPTY_CONFIG_VALUE_MESSAGE = 'El valor de configuracion es requerido';
+const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const INVALID_CONFIG_EXISTS_MESSAGE = 'Ya existe una configuracion con esa clave';
+const EMPTY_UPDATE_CONFIG_MESSAGE = 'Al menos un campo es requerido para actualizar la configuracion';
 
 type AccessOptions = {
   requireParentCompany: boolean;
@@ -155,7 +155,7 @@ async function readConfig(
     });
 
     if (!configDB) {
-      throw new Error('Config not found');
+      throw new Error('Configuracion no encontrada');
     }
 
     return configDB;
@@ -194,7 +194,7 @@ async function readConfigByKey(
     });
 
     if (!configDB) {
-      throw new Error('Config not found');
+      throw new Error('Configuracion no encontrada');
     }
 
     return configDB;

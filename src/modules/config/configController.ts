@@ -43,12 +43,12 @@ const searchConfig: RequestHandler = async (req, res, next) => {
   try {
     const { configKey } = req.params;
     if (typeof configKey !== 'string') {
-      res.status(400).json({ message: 'Config key is required' });
+      res.status(400).json({ message: 'La clave de configuracion es requerida' });
       return;
     }
     const { companyId } = req.query;
     if (typeof companyId !== 'string') {
-      res.status(400).json({ message: 'Company id is required' });
+      res.status(400).json({ message: 'El id de empresa es requerido' });
       return;
     }
 
@@ -59,7 +59,7 @@ const searchConfig: RequestHandler = async (req, res, next) => {
 
     const configDB = await readConfig(config, user, companyId);
     if (!configDB) {
-      res.status(404).json({ message: 'Config not found' });
+      res.status(404).json({ message: 'Configuracion no encontrada' });
       return;
     }
 
@@ -73,12 +73,12 @@ const updateConfigData: RequestHandler = async (req, res, next) => {
   try {
     const { configKey } = req.params;
     if (typeof configKey !== 'string') {
-      res.status(400).json({ message: 'Config key is required' });
+      res.status(400).json({ message: 'La clave de configuracion es requerida' });
       return;
     }
     const { companyId } = req.query;
     if (typeof companyId !== 'string') {
-      res.status(400).json({ message: 'Company id is required' });
+      res.status(400).json({ message: 'El id de empresa es requerido' });
       return;
     }
 
@@ -92,7 +92,7 @@ const updateConfigData: RequestHandler = async (req, res, next) => {
     const user: LoginUserDto = req.auth!;
     const updatedConfig = await updateConfig(config, user, companyId);
     if (!updatedConfig) {
-      res.status(404).json({ message: 'Config not found' });
+      res.status(404).json({ message: 'Configuracion no encontrada' });
       return;
     }
 
@@ -106,12 +106,12 @@ const deleteConfigData: RequestHandler = async (req, res, next) => {
   try {
     const { configKey } = req.params;
     if (typeof configKey !== 'string') {
-      res.status(400).json({ message: 'Config key is required' });
+      res.status(400).json({ message: 'La clave de configuracion es requerida' });
       return;
     }
     const { companyId } = req.query;
     if (typeof companyId !== 'string') {
-      res.status(400).json({ message: 'Company id is required' });
+      res.status(400).json({ message: 'El id de empresa es requerido' });
       return;
     }
 
@@ -121,7 +121,7 @@ const deleteConfigData: RequestHandler = async (req, res, next) => {
     const user: LoginUserDto = req.auth!;
     const deletedConfig = await deleteConfig(config, user, companyId);
     if (!deletedConfig) {
-      res.status(404).json({ message: 'Config not found' });
+      res.status(404).json({ message: 'Configuracion no encontrada' });
       return;
     }
 
