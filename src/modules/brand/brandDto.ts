@@ -18,6 +18,8 @@ type UpdateBrandDto = {
 type FindBrandsParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type BrandResponseDto = {

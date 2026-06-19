@@ -20,6 +20,8 @@ type FindBrandByNameDao = {
 type FindBrandsParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type UpdateColumnBrandDao = {
@@ -146,36 +148,86 @@ async function findBrandByName(brand: FindBrandByNameDao): Promise<BrandRowDao |
   }
 }
 
-const FIND_BRANDS_QUERY = `
-  select mrcid, mrcemid, mrcnombre, mrcfchregistro, mrcestado
-  from marca
-  where mrcemid = $1
-  order by mrcfchregistro desc
-  limit $2
-  offset $3
-`;
+type BrandQueryValue = string | number;
 
-const COUNT_BRANDS_QUERY = `
-  select count(*)::int as total
-  from marca
-  where mrcemid = $1
-`;
+function buildFindBrandsWhereClause(
+  companyId: string,
+  params: Pick<FindBrandsParamsDao, 'search' | 'status'>,
+): { clause: string; values: BrandQueryValue[] } {
+  const conditions = ['mrcemid = $1'];
+  const values: BrandQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`mrcestado = $${values.length}`);
+  } else {
+    conditions.push(`mrcestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`lower(trim(mrcnombre)) like $${searchParamIndex}`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindBrandsQuery(
+  params: FindBrandsParamsDao,
+  companyId: string,
+): { query: string; values: BrandQueryValue[] } {
+  const where = buildFindBrandsWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select mrcid, mrcemid, mrcnombre, mrcfchregistro, mrcestado
+    from marca
+    where ${where.clause}
+    order by mrcfchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountBrandsQuery(
+  params: FindBrandsParamsDao,
+  companyId: string,
+): { query: string; values: BrandQueryValue[] } {
+  const where = buildFindBrandsWhereClause(companyId, params);
+  const query = `
+    select count(*)::int as total
+    from marca
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
 
 async function findBrands(
   params: FindBrandsParamsDao,
   companyId: string,
 ): Promise<FindBrandsResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<BrandRowDao[]>(FIND_BRANDS_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findBrandsQuery = buildFindBrandsQuery(params, companyId);
+    const countBrandsQuery = buildCountBrandsQuery(params, companyId);
+
+    const [result, brandsTotalDB] = await Promise.all([
+      sql.unsafe<BrandRowDao[]>(findBrandsQuery.query, findBrandsQuery.values),
+      sql.unsafe<{ total: number }[]>(countBrandsQuery.query, countBrandsQuery.values),
     ]);
 
-    const brandsTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_BRANDS_QUERY, [companyId]);
     const totalItems = brandsTotalDB[0];
 
     if (!totalItems) {
@@ -192,7 +244,7 @@ async function findBrands(
 
     return brandsDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding brands');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding brands');
     throw new Error('Error finding brands');
   }
 }
