@@ -26,37 +26,37 @@ import {
 } from './productDao.js';
 import type { FindProductsResponseDao, ProductRowDao } from './productDao.js';
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_PRODUCT_ID_MESSAGE = 'Product id is required';
-const EMPTY_PRODUCT_CATEGORY_ID_MESSAGE = 'Product category id is required';
-const EMPTY_PRODUCT_BRAND_ID_MESSAGE = 'Product brand id is required';
-const EMPTY_PRODUCT_PROVEEDOR_ID_MESSAGE = 'Product proveedor id is required';
-const EMPTY_PRODUCT_MEDIDA_ID_MESSAGE = 'Product medida id is required';
-const EMPTY_PRODUCT_CODE_MESSAGE = 'Product code is required';
-const EMPTY_PRODUCT_NAME_MESSAGE = 'Product name is required';
-const EMPTY_PRODUCT_IMAGE_MESSAGE = 'Product image is required';
-const EMPTY_PRODUCT_STATUS_MESSAGE = 'Product status is required';
-const INVALID_PRODUCT_UPDATE_STATUS_MESSAGE = 'Product status must be activo, inactivo or eliminado';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const INVALID_USER_NOT_FOUND_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or admin';
-const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'User is not jefe or empleado';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'User cannot access another company';
-const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
-const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
-const INVALID_PRODUCT_CODE_EXISTS_MESSAGE = 'Product already exists with that code';
-const INVALID_PRODUCT_NAME_EXISTS_MESSAGE = 'Product already exists with that name';
-const INVALID_PRODUCT_CATEGORY_NOT_FOUND_MESSAGE = 'Product category does not exist';
-const INVALID_PRODUCT_BRAND_NOT_FOUND_MESSAGE = 'Product brand does not exist';
-const INVALID_PRODUCT_PROVEEDOR_NOT_FOUND_MESSAGE = 'Product proveedor does not exist';
-const INVALID_PRODUCT_MEDIDA_NOT_FOUND_MESSAGE = 'Product medida does not exist';
-const EMPTY_UPDATE_PRODUCT_MESSAGE = 'At least one field is required to update product';
-const FORBIDDEN_UPDATE_DELETED_PRODUCT_MESSAGE = 'Deleted product cannot be updated';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_PRODUCT_ID_MESSAGE = 'El id de producto es requerido';
+const EMPTY_PRODUCT_CATEGORY_ID_MESSAGE = 'El id de categoria de producto es requerido';
+const EMPTY_PRODUCT_BRAND_ID_MESSAGE = 'El id de marca de producto es requerido';
+const EMPTY_PRODUCT_PROVEEDOR_ID_MESSAGE = 'El id de proveedor de producto es requerido';
+const EMPTY_PRODUCT_MEDIDA_ID_MESSAGE = 'El id de medida de producto es requerido';
+const EMPTY_PRODUCT_CODE_MESSAGE = 'El codigo de producto es requerido';
+const EMPTY_PRODUCT_NAME_MESSAGE = 'El nombre de producto es requerido';
+const EMPTY_PRODUCT_IMAGE_MESSAGE = 'La imagen de producto es requerida';
+const EMPTY_PRODUCT_STATUS_MESSAGE = 'El estado de producto es requerido';
+const INVALID_PRODUCT_UPDATE_STATUS_MESSAGE = 'El estado de producto debe ser activo, inactivo o eliminado';
+const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'El usuario no es jefe o empleado';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
+const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamano de pagina debe ser un entero positivo';
+const INVALID_PRODUCT_CODE_EXISTS_MESSAGE = 'Ya existe un producto con ese codigo';
+const INVALID_PRODUCT_NAME_EXISTS_MESSAGE = 'Ya existe un producto con ese nombre';
+const INVALID_PRODUCT_CATEGORY_NOT_FOUND_MESSAGE = 'La categoria de producto no existe';
+const INVALID_PRODUCT_BRAND_NOT_FOUND_MESSAGE = 'La marca de producto no existe';
+const INVALID_PRODUCT_PROVEEDOR_NOT_FOUND_MESSAGE = 'El proveedor de producto no existe';
+const INVALID_PRODUCT_MEDIDA_NOT_FOUND_MESSAGE = 'La medida de producto no existe';
+const EMPTY_UPDATE_PRODUCT_MESSAGE = 'Al menos un campo es requerido para actualizar el producto';
+const FORBIDDEN_UPDATE_DELETED_PRODUCT_MESSAGE = 'El producto eliminado no puede ser actualizado';
 
 type AccessOptions = {
   requireParentCompany: boolean;
@@ -329,7 +329,7 @@ async function createProduct(product: CreateProductDto, user: LoginUserDto): Pro
     });
 
     if (!newProduct) {
-      throw new Error('Product was not created');
+      throw new Error('El producto no fue creado');
     }
 
     return mapProductRowToResponse(newProduct);
@@ -368,7 +368,7 @@ async function readProduct(product: FindProductDto, user: LoginUserDto): Promise
     });
 
     if (!productDB) {
-      throw new Error('Product not found');
+      throw new Error('Producto no encontrado');
     }
 
     return mapProductRowToResponse(productDB);
@@ -595,7 +595,7 @@ async function updateProduct(product: UpdateProductDto, user: LoginUserDto): Pro
     });
 
     if (!refreshedProductDB) {
-      throw new Error('Product not found');
+      throw new Error('Producto no encontrado');
     }
 
     return mapProductRowToResponse(refreshedProductDB);
