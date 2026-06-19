@@ -16,7 +16,7 @@ const authenticate: RequestHandler = (req, res, next) => {
       typeof usemid !== 'string' ||
       (usrol !== 'administrador' && usrol !== 'jefe' && usrol !== 'empleado')
     ) {
-      throw new Error('Invalid token payload');
+      throw new Error('La informacion del token es invalida');
     }
 
     req.auth = {
@@ -28,7 +28,7 @@ const authenticate: RequestHandler = (req, res, next) => {
     next();
     
   } catch {
-    const unauthorizedError = new Error('Unauthorized') as Error & {
+    const unauthorizedError = new Error('No autorizado') as Error & {
       statusCode: number;
     };
     unauthorizedError.statusCode = 401;

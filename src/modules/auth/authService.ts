@@ -24,14 +24,14 @@ import {
 } from './authDao.js';
 import type { AuthLoginControlRow, AuthLoginControlScopeDao } from './authDao.js';
 
-const EMPTY_RUC_MESSAGE = 'Company RUC is required';
-const EMPTY_NICKNAME_MESSAGE = 'Nickname is required';
-const EMPTY_PASSWORD_MESSAGE = 'Password is required';
-const EMPTY_REFRESH_TOKEN_MESSAGE = 'Refresh token is required';
-const INACTIVE_USER_MESSAGE = 'User is inactive';
-const INACTIVE_COMPANY_MESSAGE = 'Company is inactive';
-const UNAUTHORIZED_MESSAGE = 'Unauthorized';
-const TOO_MANY_REQUESTS_MESSAGE = 'Too many failed login attempts. Try again in 15 minutes';
+const EMPTY_RUC_MESSAGE = 'El RUC de la empresa es requerido';
+const EMPTY_NICKNAME_MESSAGE = 'El apodo es requerido';
+const EMPTY_PASSWORD_MESSAGE = 'La contrasena es requerida';
+const EMPTY_REFRESH_TOKEN_MESSAGE = 'El token de refresco es requerido';
+const INACTIVE_USER_MESSAGE = 'El usuario esta inactivo';
+const INACTIVE_COMPANY_MESSAGE = 'La empresa esta inactiva';
+const UNAUTHORIZED_MESSAGE = 'No autorizado';
+const TOO_MANY_REQUESTS_MESSAGE = 'Demasiados intentos fallidos. Intente de nuevo en 15 minutos';
 const TOO_MANY_REQUESTS_STATUS_CODE = 429;
 const HOUR_TO_MILLISECONDS = 60 * 60 * 1000;
 const LOGIN_MAX_FAILED_ATTEMPTS = 3;
