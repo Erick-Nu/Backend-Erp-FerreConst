@@ -73,17 +73,17 @@ const searchUsers: RequestHandler = async (req, res, next) => {
     const statusQuery = req.query.status;
 
     if (Array.isArray(searchQuery)) {
-      res.status(400).json({ message: 'Search must be a string' });
+      res.status(400).json({ message: 'La busqueda debe ser un texto' });
       return;
     }
 
     if (Array.isArray(statusQuery)) {
-      res.status(400).json({ message: 'Status must be a string' });
+      res.status(400).json({ message: 'El estado debe ser un texto' });
       return;
     }
 
     if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
-      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
 
@@ -116,7 +116,7 @@ const searchUser: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'User id is required' });
+      res.status(400).json({ message: 'El id de usuario es requerido' });
       return;
     }
 
@@ -127,7 +127,7 @@ const searchUser: RequestHandler = async (req, res, next) => {
     const userDB = await readUser(userData, user);
 
     if (!userDB) {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: 'Usuario no encontrado' });
       return;
     }
 
@@ -143,7 +143,7 @@ const updateUserStatus: RequestHandler = async (req, res, next) => {
     const { usestado } = req.body;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'User id is required' });
+      res.status(400).json({ message: 'El id de usuario es requerido' });
       return;
     }
 
@@ -156,11 +156,11 @@ const updateUserStatus: RequestHandler = async (req, res, next) => {
     const updated = await updateUserWithStatus(userData, user);
 
     if (!updated) {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: 'Usuario no encontrado' });
       return;
     }
 
-    res.status(200).json({ message: 'User status updated' });
+    res.status(200).json({ message: 'Estado de usuario actualizado' });
   } catch (error) {
     next(error);
   }
@@ -171,7 +171,7 @@ const updateUserData: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'User id is required' });
+      res.status(400).json({ message: 'El id de usuario es requerido' });
       return;
     }
 
@@ -210,7 +210,7 @@ const updateUserData: RequestHandler = async (req, res, next) => {
     const updatedUser = await updateUser(userData, user);
 
     if (!updatedUser) {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: 'Usuario no encontrado' });
       return;
     }
 
@@ -226,7 +226,7 @@ const updateUserPasswordData: RequestHandler = async (req, res, next) => {
     const { uspassword } = req.body as UpdateUserPasswordRequestBody;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'User id is required' });
+      res.status(400).json({ message: 'El id de usuario es requerido' });
       return;
     }
 
@@ -239,11 +239,11 @@ const updateUserPasswordData: RequestHandler = async (req, res, next) => {
     const updated = await updateUserPassword(userData, user);
 
     if (!updated) {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: 'Usuario no encontrado' });
       return;
     }
 
-    res.status(200).json({ message: 'User password updated' });
+    res.status(200).json({ message: 'Contrasena de usuario actualizada' });
   } catch (error) {
     next(error);
   }

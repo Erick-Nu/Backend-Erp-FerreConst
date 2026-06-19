@@ -32,35 +32,35 @@ import {
 import { findCompanyById } from  '../company/companyDao.js';
 
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_NAME_MESSAGE = 'Name is required';
-const EMPTY_NICKNAME_MESSAGE = 'Nickname is required';
-const EMPTY_EMAIL_MESSAGE = 'Email is required';
-const EMPTY_PASSWORD_MESSAGE = 'Password is required';
-const EMPTY_ROLE_MESSAGE = 'Role is required';
-const INVALID_EMAIL_MESSAGE = 'Email must be valid';
-const INVALID_NAME_MESSAGE = 'Name must contain only letters and spaces';
-const INVALID_PASSWORD_MESSAGE = 'Password must be at least 8 characters';
-const INVALID_ROLE_MESSAGE = 'Role must be valid';
-const INVALID_ROLE_MESSAGE_USER = 'Role must be jefe or empleado';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company code is not invalid';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or admin';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const INVALID_USER_NOT_FOUND_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'User cannot access another company';
-const FORBIDDEN_ROLE_USER_JEFE_MESSAGE = 'User is not jefe';
-const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
-const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
-const EMPTY_USER_ID_MESSAGE = 'User id is required';
-const EMPTY_USER_STATUS_MESSAGE = 'User status is required';
-const EMPTY_USER_IMAGE_MESSAGE = 'User image is required';
-const INVALID_USER_UPDATE_STATUS_MESSAGE = 'User status must be activo, inactivo or eliminado';
-const EMPTY_UPDATE_USER_MESSAGE = 'At least one field is required to update user';
-const FORBIDDEN_UPDATE_DELETED_USER_MESSAGE = 'Deleted user status cannot be changed';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_NAME_MESSAGE = 'El nombre es requerido';
+const EMPTY_NICKNAME_MESSAGE = 'El apodo es requerido';
+const EMPTY_EMAIL_MESSAGE = 'El correo es requerido';
+const EMPTY_PASSWORD_MESSAGE = 'La contrasena es requerida';
+const EMPTY_ROLE_MESSAGE = 'El rol es requerido';
+const INVALID_EMAIL_MESSAGE = 'El correo debe ser valido';
+const INVALID_NAME_MESSAGE = 'El nombre solo debe contener letras y espacios';
+const INVALID_PASSWORD_MESSAGE = 'La contrasena debe tener al menos 8 caracteres';
+const INVALID_ROLE_MESSAGE = 'El rol debe ser valido';
+const INVALID_ROLE_MESSAGE_USER = 'El rol debe ser jefe o empleado';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const INVALID_COMPANY_FIND_MESSAGE = 'El codigo de empresa no es invalido';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
+const FORBIDDEN_ROLE_USER_JEFE_MESSAGE = 'El usuario no es jefe';
+const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamano de pagina debe ser un entero positivo';
+const EMPTY_USER_ID_MESSAGE = 'El id de usuario es requerido';
+const EMPTY_USER_STATUS_MESSAGE = 'El estado de usuario es requerido';
+const EMPTY_USER_IMAGE_MESSAGE = 'La imagen de usuario es requerida';
+const INVALID_USER_UPDATE_STATUS_MESSAGE = 'El estado de usuario debe ser activo, inactivo o eliminado';
+const EMPTY_UPDATE_USER_MESSAGE = 'Al menos un campo es requerido para actualizar el usuario';
+const FORBIDDEN_UPDATE_DELETED_USER_MESSAGE = 'El usuario eliminado no puede cambiar de estado';
 
 type AccessOptions = {
   requireParentCompany: boolean;
@@ -173,7 +173,7 @@ async function createUser(user: CreateUserDto, userLogin: LoginUserDto): Promise
 
     const empresaDB = await findCompanyById(usemid);
     if (!empresaDB) {
-      throw new Error('Company does not exist');
+      throw new Error('La empresa no existe');
     }
 
     if (!isCrossCompanyCreation) {
@@ -200,7 +200,7 @@ async function createUser(user: CreateUserDto, userLogin: LoginUserDto): Promise
 
     const emailDB = await findUserByEmail(uscorreo);
     if (emailDB) {
-      throw new Error('User already exists with that email');
+      throw new Error('Ya existe un usuario con ese correo');
     }
 
     const apodoDB = await findUserByNickname({
@@ -208,7 +208,7 @@ async function createUser(user: CreateUserDto, userLogin: LoginUserDto): Promise
       usapodo,
     });
     if (apodoDB) {
-      throw new Error('User already exists with that nickname');
+      throw new Error('Ya existe un usuario con ese apodo');
     }
 
     const passwordHash = await encryptPassword(uspassword);
@@ -230,7 +230,7 @@ async function createUser(user: CreateUserDto, userLogin: LoginUserDto): Promise
     });
 
     if (!newUserDB) {
-      throw new Error('User was not created');
+      throw new Error('El usuario no fue creado');
     }
 
     const userResponse: UserResponseDto = {
@@ -299,7 +299,7 @@ async function readUser(userData: FindUserDto, user: LoginUserDto): Promise<User
       usemid: user.usemid,
     });
     if (!userDB) {
-      throw new Error('User not found');
+      throw new Error('Usuario no encontrado');
     }
 
     const userResponse: UserResponseDto = {
@@ -404,17 +404,17 @@ async function updateUser(userData: UpdateUserDto, user: LoginUserDto): Promise<
     });
 
     if (!userDB) {
-      throw new Error('User not found');
+      throw new Error('Usuario no encontrado');
     }
 
     if (userDB.usestado === 'eliminado') {
-      throw new Error('Deleted user cannot be updated');
+      throw new Error('El usuario eliminado no puede ser actualizado');
     }
 
     if (uscorreo) {
       const emailDB = await findUserByEmail(uscorreo);
       if (emailDB) {
-        throw new Error('User already exists with that email');
+        throw new Error('Ya existe un usuario con ese correo');
       }
     }
 
@@ -472,7 +472,7 @@ async function updateUser(userData: UpdateUserDto, user: LoginUserDto): Promise<
     });
 
     if (!updatedUserDB) {
-      throw new Error('Error updating user');
+      throw new Error('Error al actualizar el usuario');
     }
 
     const updatedUser: UserResponseDto = {
