@@ -8,6 +8,7 @@ import {
 import type { LoginUserDto } from '../auth/authDto.js';
 import type { CreateCompanyDto, FindCompaniesParamsDto, UpdateCompanyDto } from './companyDto.js';
 import { createCompany, readCompanies, readCompany, updateCompany, updateCompanyWithStatus } from './companyService.js';
+import { isValidStatus } from '../../utils/validation.js';
 
 const COMPANY_IMAGE_BASE_PATH = '/empresas';
 const DEFAULT_COMPANY_IMAGE_PUBLIC_PATH = '/uploads/empresas/company.png';
@@ -48,6 +49,23 @@ const searchCompanies: RequestHandler = async (req, res, next) => {
   try {
     const pageQuery = req.query.page;
     const pageSizeQuery = req.query.pageSize;
+    const searchQuery = req.query.search;
+    const statusQuery = req.query.status;
+
+    if (Array.isArray(searchQuery)) {
+      res.status(400).json({ message: 'Search must be a string' });
+      return;
+    }
+
+    if (Array.isArray(statusQuery)) {
+      res.status(400).json({ message: 'Status must be a string' });
+      return;
+    }
+
+    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      return;
+    }
 
     const page = Number(pageQuery);
     const pageSize = Number(pageSizeQuery);
@@ -56,6 +74,15 @@ const searchCompanies: RequestHandler = async (req, res, next) => {
       page,
       pageSize,
     };
+
+    if (typeof searchQuery === 'string') {
+      params.search = searchQuery;
+    }
+
+    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+      params.status = statusQuery;
+    }
+
     const user: LoginUserDto = req.auth!;
     const companiesDB = await readCompanies(params, user);
 

@@ -39,6 +39,8 @@ type CompanyResponseDto = {
 type FindCompaniesParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type FindCompaniesResponseDto = {

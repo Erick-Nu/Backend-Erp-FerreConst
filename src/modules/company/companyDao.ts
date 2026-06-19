@@ -35,6 +35,8 @@ type UpdateColumnCompanyDao = {
 type FindCompaniesParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type FindCompaniesResponseDao = {
@@ -44,6 +46,8 @@ type FindCompaniesResponseDao = {
   totalItems: number;
   totalPages: number;
 };
+
+type CompanyQueryValue = string | number;
 
 
 const SAVE_COMPANY_QUERY = `
@@ -166,16 +170,84 @@ const COUNT_COMPANIES_QUERY = `
   where empadre = false
 `;
 
+function buildFindCompaniesWhereClause(
+  params: Pick<FindCompaniesParamsDao, 'search' | 'status'>,
+): { clause: string; values: CompanyQueryValue[] } {
+  const conditions = ['empadre = false'];
+  const values: CompanyQueryValue[] = [];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`emestado = $${values.length}`);
+  } else {
+    conditions.push(`emestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(emrznsocial)) like $${searchParamIndex}
+      or lower(trim(emruc)) like $${searchParamIndex}
+      or lower(trim(emcorreo)) like $${searchParamIndex}
+      or lower(trim(emcodigo)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindCompaniesQuery(
+  params: FindCompaniesParamsDao,
+): { query: string; values: CompanyQueryValue[] } {
+  const where = buildFindCompaniesWhereClause(params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select emid, emruc, emrznsocial, emcorreo, emlogo, emcodigo, emfchregistro, emestado
+    from empresa
+    where ${where.clause}
+    order by emfchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountCompaniesQuery(
+  params: FindCompaniesParamsDao,
+): { query: string; values: CompanyQueryValue[] } {
+  const where = buildFindCompaniesWhereClause(params);
+
+  const query = `
+    select count(*)::int as total
+    from empresa
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
+
 async function findCompanies(params: FindCompaniesParamsDao): Promise<FindCompaniesResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
+
   try {
-    const result = await sql.unsafe<CompanyRowDao[]>(FIND_COMPANIES_QUERY, [
-      pageSize,
-      offset,
+    const findCompaniesQuery = buildFindCompaniesQuery(params);
+    const countCompaniesQuery = buildCountCompaniesQuery(params);
+
+    const [result, companiesTotalDB] = await Promise.all([
+      sql.unsafe<CompanyRowDao[]>(findCompaniesQuery.query, findCompaniesQuery.values),
+      sql.unsafe<{ total: number }[]>(countCompaniesQuery.query, countCompaniesQuery.values),
     ]);
 
-    const companiesTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_COMPANIES_QUERY);
     const totalItems = companiesTotalDB[0];
 
     if (!totalItems) {
@@ -192,7 +264,7 @@ async function findCompanies(params: FindCompaniesParamsDao): Promise<FindCompan
 
     return companiesDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize }, 'Error finding companies');
+    logger.error({ err: error, page, pageSize, search }, 'Error finding companies');
     throw new Error('Error finding companies');
   }
 }
