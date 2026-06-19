@@ -9,13 +9,13 @@ import type {
 } from './sequenceDto.js';
 import { findSequence, saveSequence } from './sequenceDao.js';
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_BRANCH_ID_MESSAGE = 'Branch id is required';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const INVALID_BRANCH_FIND_MESSAGE = 'Branch does not exist';
-const INVALID_BRANCH_STATUS_MESSAGE = 'Branch is not active';
-const INVALID_SEQUENCE_EXISTS_MESSAGE = 'Sequence already exists for this branch';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_BRANCH_ID_MESSAGE = 'El id de sucursal es requerido';
+const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_BRANCH_FIND_MESSAGE = 'La sucursal no existe';
+const INVALID_BRANCH_STATUS_MESSAGE = 'La sucursal no esta activa';
+const INVALID_SEQUENCE_EXISTS_MESSAGE = 'Ya existe una secuencia para esta sucursal';
 
 async function validateCompanyAccess(seemid: string): Promise<void> {
   const companyDB = await findCompanyById(seemid);
@@ -96,7 +96,7 @@ async function readSequence(sequence: FindSequenceDto): Promise<SequenceResponse
     });
 
     if (!sequenceDB) {
-      throw new Error('Sequence not found');
+      throw new Error('Secuencia no encontrada');
     }
 
     return sequenceDB;

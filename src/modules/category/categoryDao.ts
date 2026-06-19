@@ -63,7 +63,7 @@ async function saveCategory(category: CreateCategoryDao): Promise<string> {
 
     const categoryDB = result[0];
     if (!categoryDB) {
-      throw new Error('Category was not created');
+      throw new Error('La categoria no fue creada');
     }
 
     logger.info(

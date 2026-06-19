@@ -80,7 +80,7 @@ async function saveStock(stock: CreateStockDao): Promise<string> {
 
     const stockDB = result[0];
     if (!stockDB) {
-      throw new Error('Stock was not created');
+      throw new Error('El stock no fue creado');
     }
 
     logger.info(

@@ -38,7 +38,7 @@ async function saveSequence(sequence: CreateSequenceDao): Promise<string> {
 
     const sequenceDB = result[0];
     if (!sequenceDB) {
-      throw new Error('Sequence was not created');
+      throw new Error('La secuencia no fue creada');
     }
 
     logger.info(

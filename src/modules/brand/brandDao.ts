@@ -60,7 +60,7 @@ async function saveBrand(brand: CreateBrandDao): Promise<string> {
 
     const brandDB = result[0];
     if (!brandDB) {
-      throw new Error('Brand was not created');
+      throw new Error('La marca no fue creada');
     }
 
     logger.info(

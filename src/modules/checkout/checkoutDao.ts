@@ -68,7 +68,7 @@ async function saveCheckout(checkout: CreateCheckoutDao): Promise<string> {
 
     const checkoutDB = result[0];
     if (!checkoutDB) {
-      throw new Error('Checkout was not created');
+      throw new Error('La caja no fue creada');
     }
 
     logger.info(

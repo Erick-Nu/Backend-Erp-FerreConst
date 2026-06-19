@@ -34,7 +34,7 @@ async function saveConfig(config: CreateConfigDao): Promise<string> {
 
     const configDB = result[0];
     if (!configDB) {
-      throw new Error('Config was not created');
+      throw new Error('La configuracion no fue creada');
     }
 
     logger.info(

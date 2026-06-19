@@ -81,7 +81,7 @@ async function saveUser(user: CreateUserDao): Promise<string> {
     const userDB = result[0];
       
     if (!userDB ) {
-      throw new Error('User was not created');
+      throw new Error('El usuario no fue creado');
     }
 
     logger.info({ userId: userDB.usid, companyId: user.usemid }, 'User created');

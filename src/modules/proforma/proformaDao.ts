@@ -182,7 +182,7 @@ async function saveProformaHeader(
 
     const proformaDB = result[0];
     if (!proformaDB) {
-      throw new Error('Proforma was not created');
+      throw new Error('La proforma no fue creada');
     }
 
     return proformaDB.prfmaid;
@@ -229,7 +229,7 @@ async function saveProformaItem(
 
     const itemDB = result[0];
     if (!itemDB) {
-      throw new Error('Proforma item was not created');
+      throw new Error('El item de proforma no fue creado');
     }
 
     return itemDB.dprfmaid;
@@ -816,7 +816,7 @@ async function saveSendProformaTask(task: CreateSendProformaTaskDao): Promise<st
 
     const createdTask = result[0];
     if (!createdTask) {
-      throw new Error('Send proforma task was not created');
+      throw new Error('La tarea de envio de proforma no fue creada');
     }
 
     return createdTask.sendid;

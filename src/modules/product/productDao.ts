@@ -114,7 +114,7 @@ async function saveProduct(product: CreateProductDao): Promise<string> {
 
     const productDB = result[0];
     if (!productDB) {
-      throw new Error('Product was not created');
+      throw new Error('El producto no fue creado');
     }
 
     logger.info(

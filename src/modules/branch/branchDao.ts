@@ -67,7 +67,7 @@ async function saveBranch(branch: CreateBranchDao): Promise<string> {
     const branchDB = result[0];
       
     if (!branchDB ) {
-      throw new Error('Branch was not created');
+      throw new Error('La sucursal no fue creada');
     }
 
     logger.info({ branchId: branchDB.suid, companyId: branch.suemid }, 'Branch created');

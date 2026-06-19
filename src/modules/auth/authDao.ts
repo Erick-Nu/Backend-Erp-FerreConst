@@ -264,7 +264,7 @@ async function createAuthRefreshToken(tokenData: CreateAuthRefreshTokenDao): Pro
 
     const tokenDB = result[0];
     if (!tokenDB) {
-      throw new Error('Refresh token was not created');
+      throw new Error('El token de refresco no fue creado');
     }
 
     return tokenDB.authid;

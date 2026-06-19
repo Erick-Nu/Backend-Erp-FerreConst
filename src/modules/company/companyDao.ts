@@ -67,7 +67,7 @@ async function saveCompany(company: CreateCompanyDao): Promise<string> {
 
     const companyDB = result[0];
     if (!companyDB) {
-      throw new Error('Company was not created');
+      throw new Error('La empresa no fue creada');
     }
 
     logger.info({ companyId: companyDB.emid, ruc: company.emruc }, 'Company created');

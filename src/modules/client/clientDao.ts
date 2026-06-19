@@ -88,7 +88,7 @@ async function saveClient(client: CreateClientDao): Promise<string> {
 
     const clientDB = result[0];
     if (!clientDB) {
-      throw new Error('Client was not created');
+      throw new Error('El cliente no fue creado');
     }
 
     logger.info(

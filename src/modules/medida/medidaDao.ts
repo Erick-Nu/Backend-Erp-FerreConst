@@ -68,7 +68,7 @@ async function saveMedida(medida: CreateMedidaDao): Promise<string> {
 
     const medidaDB = result[0];
     if (!medidaDB) {
-      throw new Error('Medida was not created');
+      throw new Error('La medida no fue creada');
     }
 
     logger.info(

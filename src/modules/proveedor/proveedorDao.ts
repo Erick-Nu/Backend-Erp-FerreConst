@@ -79,7 +79,7 @@ async function saveProveedor(proveedor: CreateProveedorDao): Promise<string> {
 
     const proveedorDB = result[0];
     if (!proveedorDB) {
-      throw new Error('Proveedor was not created');
+      throw new Error('El proveedor no fue creado');
     }
 
     logger.info(
