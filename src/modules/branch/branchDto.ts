@@ -35,6 +35,8 @@ type UpdateBranchDto = {
 type FindBranchesParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type FindBranchesResponseDto = {

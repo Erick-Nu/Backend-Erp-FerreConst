@@ -23,6 +23,8 @@ type FindBranchByIdDao = {
 type FindBranchesParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type UpdateColumnBranchDao = {
@@ -115,36 +117,89 @@ async function findBranchById(branch: FindBranchByIdDao): Promise<BranchRowDao |
   }
 }
 
-const FIND_BRANCHES_QUERY = `
-  select suid, suemid, sunombre, sudireccion, sucorreo, suidentificador, sufchregistro, suestado
-  from sucursal
-  where suemid = $1
-  order by sufchregistro desc
-  limit $2
-  offset $3
-`;
+type BranchQueryValue = string | number;
 
-const COUNT_BRANCHES_QUERY = `
-  select count(*)::int as total
-  from sucursal
-  where suemid = $1
-`;
+function buildFindBranchesWhereClause(
+  companyId: string,
+  params: Pick<FindBranchesParamsDao, 'search' | 'status'>,
+): { clause: string; values: BranchQueryValue[] } {
+  const conditions = ['suemid = $1'];
+  const values: BranchQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`suestado = $${values.length}`);
+  } else {
+    conditions.push(`suestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(sunombre)) like $${searchParamIndex}
+      or lower(trim(suidentificador)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindBranchesQuery(
+  params: FindBranchesParamsDao,
+  companyId: string,
+): { query: string; values: BranchQueryValue[] } {
+  const where = buildFindBranchesWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select suid, suemid, sunombre, sudireccion, sucorreo, suidentificador, sufchregistro, suestado
+    from sucursal
+    where ${where.clause}
+    order by sufchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountBranchesQuery(
+  params: FindBranchesParamsDao,
+  companyId: string,
+): { query: string; values: BranchQueryValue[] } {
+  const where = buildFindBranchesWhereClause(companyId, params);
+  const query = `
+    select count(*)::int as total
+    from sucursal
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
 
 async function findBranches(
   params: FindBranchesParamsDao,
   companyId: string,
 ): Promise<FindBranchesResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<BranchRowDao[]>(FIND_BRANCHES_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findBranchesQuery = buildFindBranchesQuery(params, companyId);
+    const countBranchesQuery = buildCountBranchesQuery(params, companyId);
+
+    const [result, branchesTotalDB] = await Promise.all([
+      sql.unsafe<BranchRowDao[]>(findBranchesQuery.query, findBranchesQuery.values),
+      sql.unsafe<{ total: number }[]>(countBranchesQuery.query, countBranchesQuery.values),
     ]);
 
-    const branchesTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_BRANCHES_QUERY, [companyId]);
     const totalItems = branchesTotalDB[0];
 
     if (!totalItems) {
@@ -161,7 +216,7 @@ async function findBranches(
 
     return branchesDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding branches');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding branches');
     throw new Error('Error finding branches');
   }
 }
