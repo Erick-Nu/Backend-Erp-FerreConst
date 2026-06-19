@@ -27,36 +27,36 @@ import {
   updateClientById,
 } from './clientDao.js';
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_CLIENT_ID_MESSAGE = 'Client id is required';
-const EMPTY_CLIENT_TYPE_IDENTIFICATION_MESSAGE = 'Client identification type is required';
-const EMPTY_CLIENT_IDENTIFICATION_MESSAGE = 'Client identification is required';
-const EMPTY_CLIENT_NAME_MESSAGE = 'Client name is required';
-const EMPTY_CLIENT_EMAIL_MESSAGE = 'Client email is required';
-const EMPTY_CLIENT_ADDRESS_MESSAGE = 'Client address is required';
-const EMPTY_CLIENT_PHONE_MESSAGE = 'Client phone is required';
-const EMPTY_CLIENT_STATUS_MESSAGE = 'Client status is required';
-const INVALID_CLIENT_TYPE_IDENTIFICATION_MESSAGE = 'Client identification type must be cedula or ruc';
-const INVALID_CLIENT_IDENTIFICATION_MESSAGE = 'Client identification must be valid for the selected type';
-const INVALID_CLIENT_EMAIL_MESSAGE = 'Client email must be valid';
-const INVALID_CLIENT_PHONE_MESSAGE = 'Client phone must be valid';
-const INVALID_CLIENT_UPDATE_STATUS_MESSAGE = 'Client status must be activo, inactivo or eliminado';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const INVALID_USER_NOT_FOUND_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or admin';
-const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'User is not jefe or empleado';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'User cannot access another company';
-const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
-const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
-const INVALID_CLIENT_EXISTS_IDENTIFICATION_MESSAGE = 'Client already exists with that identification';
-const INVALID_CLIENT_EXISTS_EMAIL_MESSAGE = 'Client already exists with that email';
-const EMPTY_UPDATE_CLIENT_MESSAGE = 'At least one field is required to update client';
-const FORBIDDEN_UPDATE_DELETED_CLIENT_MESSAGE = 'Deleted client cannot be updated';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_CLIENT_ID_MESSAGE = 'El id de cliente es requerido';
+const EMPTY_CLIENT_TYPE_IDENTIFICATION_MESSAGE = 'El tipo de identificacion de cliente es requerido';
+const EMPTY_CLIENT_IDENTIFICATION_MESSAGE = 'La identificacion de cliente es requerida';
+const EMPTY_CLIENT_NAME_MESSAGE = 'El nombre de cliente es requerido';
+const EMPTY_CLIENT_EMAIL_MESSAGE = 'El correo de cliente es requerido';
+const EMPTY_CLIENT_ADDRESS_MESSAGE = 'La direccion de cliente es requerida';
+const EMPTY_CLIENT_PHONE_MESSAGE = 'El telefono de cliente es requerido';
+const EMPTY_CLIENT_STATUS_MESSAGE = 'El estado de cliente es requerido';
+const INVALID_CLIENT_TYPE_IDENTIFICATION_MESSAGE = 'El tipo de identificacion debe ser cedula o ruc';
+const INVALID_CLIENT_IDENTIFICATION_MESSAGE = 'La identificacion debe ser valida para el tipo seleccionado';
+const INVALID_CLIENT_EMAIL_MESSAGE = 'El correo de cliente debe ser valido';
+const INVALID_CLIENT_PHONE_MESSAGE = 'El telefono de cliente debe ser valido';
+const INVALID_CLIENT_UPDATE_STATUS_MESSAGE = 'El estado de cliente debe ser activo, inactivo o eliminado';
+const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'El usuario no es jefe o empleado';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
+const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamano de pagina debe ser un entero positivo';
+const INVALID_CLIENT_EXISTS_IDENTIFICATION_MESSAGE = 'Ya existe un cliente con esa identificacion';
+const INVALID_CLIENT_EXISTS_EMAIL_MESSAGE = 'Ya existe un cliente con ese correo';
+const EMPTY_UPDATE_CLIENT_MESSAGE = 'Al menos un campo es requerido para actualizar el cliente';
+const FORBIDDEN_UPDATE_DELETED_CLIENT_MESSAGE = 'El cliente eliminado no puede ser actualizado';
 
 type AccessOptions = {
   requireParentCompany: boolean;
@@ -226,7 +226,7 @@ async function createClient(client: CreateClientDto, user: LoginUserDto): Promis
     });
 
     if (!clientDB) {
-      throw new Error('Client was not created');
+      throw new Error('El cliente no fue creado');
     }
 
     return clientDB;
@@ -264,7 +264,7 @@ async function readClient(client: FindClientDto, user: LoginUserDto): Promise<Cl
     });
 
     if (!clientDB) {
-      throw new Error('Client not found');
+      throw new Error('Cliente no encontrado');
     }
 
     return clientDB;
@@ -364,7 +364,7 @@ async function updateClient(client: UpdateClientDto, user: LoginUserDto): Promis
     });
 
     if (!clientDB) {
-      throw new Error('Client not found');
+      throw new Error('Cliente no encontrado');
     }
 
     if (clientDB.clnteestado === 'eliminado') {
