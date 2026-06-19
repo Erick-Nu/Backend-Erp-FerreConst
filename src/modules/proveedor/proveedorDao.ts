@@ -24,6 +24,8 @@ type FindProveedorByNameDao = {
 type FindProveedoresParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type UpdateColumnProveedorDao = {
@@ -182,54 +184,107 @@ async function findProveedorByName(proveedor: FindProveedorByNameDao): Promise<P
   }
 }
 
-const FIND_PROVEEDORES_QUERY = `
-  select
-    p.provid,
-    p.provemid,
-    p.provctgriaid,
-    p.provmrcid,
-    p.provnombre,
-    p.provtelefono,
-    p.provcorreo,
-    p.provfchregistro,
-    p.provestado,
-    c.ctgnombre,
-    c.ctgriadescripcion,
-    m.mrcnombre
-  from proveedor p
-  left join categoria c
-    on c.ctgriaid = p.provctgriaid
-    and c.ctgriaemid = p.provemid
-  left join marca m
-    on m.mrcid = p.provmrcid
-    and m.mrcemid = p.provemid
-  where p.provemid = $1
-  order by p.provfchregistro desc
-  limit $2
-  offset $3
-`;
+type ProveedorQueryValue = string | number;
 
-const COUNT_PROVEEDORES_QUERY = `
-  select count(*)::int as total
-  from proveedor
-  where provemid = $1
-`;
+function buildFindProveedoresWhereClause(
+  companyId: string,
+  params: Pick<FindProveedoresParamsDao, 'search' | 'status'>,
+): { clause: string; values: ProveedorQueryValue[] } {
+  const conditions = ['p.provemid = $1'];
+  const values: ProveedorQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`p.provestado = $${values.length}`);
+  } else {
+    conditions.push(`p.provestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(p.provnombre)) like $${searchParamIndex}
+      or lower(trim(p.provcorreo)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindProveedoresQuery(
+  params: FindProveedoresParamsDao,
+  companyId: string,
+): { query: string; values: ProveedorQueryValue[] } {
+  const where = buildFindProveedoresWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select
+      p.provid,
+      p.provemid,
+      p.provctgriaid,
+      p.provmrcid,
+      p.provnombre,
+      p.provtelefono,
+      p.provcorreo,
+      p.provfchregistro,
+      p.provestado,
+      c.ctgnombre,
+      c.ctgriadescripcion,
+      m.mrcnombre
+    from proveedor p
+    left join categoria c
+      on c.ctgriaid = p.provctgriaid
+      and c.ctgriaemid = p.provemid
+    left join marca m
+      on m.mrcid = p.provmrcid
+      and m.mrcemid = p.provemid
+    where ${where.clause}
+    order by p.provfchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountProveedoresQuery(
+  params: FindProveedoresParamsDao,
+  companyId: string,
+): { query: string; values: ProveedorQueryValue[] } {
+  const where = buildFindProveedoresWhereClause(companyId, params);
+  const query = `
+    select count(*)::int as total
+    from proveedor p
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
 
 async function findProveedores(
   params: FindProveedoresParamsDao,
   companyId: string,
 ): Promise<FindProveedoresResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<ProveedorRowDao[]>(FIND_PROVEEDORES_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findProveedoresQuery = buildFindProveedoresQuery(params, companyId);
+    const countProveedoresQuery = buildCountProveedoresQuery(params, companyId);
+
+    const [result, proveedoresTotalDB] = await Promise.all([
+      sql.unsafe<ProveedorRowDao[]>(findProveedoresQuery.query, findProveedoresQuery.values),
+      sql.unsafe<{ total: number }[]>(countProveedoresQuery.query, countProveedoresQuery.values),
     ]);
 
-    const proveedoresTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_PROVEEDORES_QUERY, [companyId]);
     const totalItems = proveedoresTotalDB[0];
 
     if (!totalItems) {
@@ -246,7 +301,7 @@ async function findProveedores(
 
     return proveedoresDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding proveedores');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding proveedores');
     throw new Error('Error finding proveedores');
   }
 }

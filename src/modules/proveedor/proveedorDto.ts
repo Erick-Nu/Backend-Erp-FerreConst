@@ -26,6 +26,8 @@ type UpdateProveedorDto = {
 type FindProveedoresParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type ProveedorCategoryResponseDto = {

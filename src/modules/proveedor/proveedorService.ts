@@ -81,7 +81,7 @@ function mapFindProveedoresResponse(proveedoresDB: FindProveedoresResponseDao): 
 }
 
 function validateFindProveedoresParams(params: FindProveedoresParamsDto): FindProveedoresParamsDto {
-  const { page, pageSize } = params;
+  const { page, pageSize, search, status } = params;
 
   if (!Number.isInteger(page) || page < 1) {
     throw new Error(INVALID_PAGE_MESSAGE);
@@ -91,10 +91,24 @@ function validateFindProveedoresParams(params: FindProveedoresParamsDto): FindPr
     throw new Error(INVALID_PAGE_SIZE_MESSAGE);
   }
 
-  return {
+  const normalizedSearch = typeof search === 'string'
+    ? search.trim()
+    : undefined;
+
+  const validatedParams: FindProveedoresParamsDto = {
     page,
     pageSize,
   };
+
+  if (normalizedSearch && normalizedSearch.length > 0) {
+    validatedParams.search = normalizedSearch;
+  }
+
+  if (status) {
+    validatedParams.status = status;
+  }
+
+  return validatedParams;
 }
 
 async function validateCompanyAndUserAccess(user: LoginUserDto, options: AccessOptions): Promise<void> {
