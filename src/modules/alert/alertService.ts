@@ -1,22 +1,29 @@
 import type { Response } from 'express';
 import { logger } from '../../utils/logger.js';
-import { validateRequiredString } from '../../utils/validation.js';
 import { findCompanyById } from '../company/companyDao.js';
 import { findBranchById } from '../branch/branchDao.js';
 import { findUserById } from '../user/userDao.js';
 import type { LoginUserDto } from '../auth/authDto.js';
 import { createSSEConnection, sendSSEData } from '../../services/sseManager.js';
 import {
-  countAlertsByCompany,
-  countAlertsByCompanyAndBranch,
-  findAlertsByCompany,
-  findAlertsByCompanyAndBranch,
-  findRecentUnseenAlerts,
+  countAlerts,
+  findAlertSummaryByBranch,
+  findAlertSummaryByType,
+  findAlertSummaryTotals,
+  findAlerts,
+  findRecentChangedAlerts,
   markAlertAsViewed,
 } from './alertDao.js';
-import type { AlertResponseDto, FindAlertsParamsDto, FindAlertsResponseDto } from './alertDto.js';
+import type {
+  AlertResponseDto,
+  AlertSummaryResponseDto,
+  FindAlertsParamsDto,
+  FindAlertsResponseDto,
+} from './alertDto.js';
+import type { AlertEventRowDao, AlertRowWithJoinsDao, FindAlertsFiltersDao } from './alertDao.js';
 
 const SSE_POLL_INTERVAL_MS = 5000;
+const SSE_CURSOR_INITIAL_ALERT_ID = '';
 const EMPTY_ALERT_ID_MESSAGE = 'Alert id is required';
 const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
 const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
@@ -29,12 +36,24 @@ const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
 const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
 const INVALID_BRANCH_NOT_FOUND_MESSAGE = 'Branch does not exist';
 const ALERT_NOT_FOUND_MESSAGE = 'Alert not found';
+const BAD_REQUEST_STATUS_CODE = 400;
+const FORBIDDEN_STATUS_CODE = 403;
+const NOT_FOUND_STATUS_CODE = 404;
 
 type AccessOptions = {
   targetCompanyId: string;
 };
 
-import type { AlertRowWithJoinsDao } from './alertDao.js';
+type ErrorWithStatusCode = Error & {
+  statusCode: number;
+};
+
+function createErrorWithStatusCode(message: string, statusCode: number): ErrorWithStatusCode {
+  const error = new Error(message) as ErrorWithStatusCode;
+  error.statusCode = statusCode;
+
+  return error;
+}
 
 function mapAlertRowToResponse(alert: AlertRowWithJoinsDao): AlertResponseDto {
   return {
@@ -58,7 +77,12 @@ function mapAlertRowToResponse(alert: AlertRowWithJoinsDao): AlertResponseDto {
     alvisible: alert.alvisible,
     alvisto: alert.alvisto,
     alfchcreacion: alert.alfchcreacion,
+    alfchactualizacion: alert.alfchactualizacion,
   };
+}
+
+function mapAlertEventToResponse(alert: AlertEventRowDao): AlertResponseDto {
+  return mapAlertRowToResponse(alert);
 }
 
 async function validateAlertAccess(user: LoginUserDto, options: AccessOptions): Promise<void> {
@@ -66,11 +90,11 @@ async function validateAlertAccess(user: LoginUserDto, options: AccessOptions): 
 
   const company = await findCompanyById(user.usemid);
   if (!company) {
-    throw new Error(INVALID_COMPANY_FIND_MESSAGE);
+    throw createErrorWithStatusCode(INVALID_COMPANY_FIND_MESSAGE, NOT_FOUND_STATUS_CODE);
   }
 
   if (company.emestado !== 'activo') {
-    throw new Error(INVALID_COMPANY_STATUS_MESSAGE);
+    throw createErrorWithStatusCode(INVALID_COMPANY_STATUS_MESSAGE, FORBIDDEN_STATUS_CODE);
   }
 
   const userCompany = await findUserById({
@@ -79,23 +103,23 @@ async function validateAlertAccess(user: LoginUserDto, options: AccessOptions): 
   });
 
   if (!userCompany) {
-    throw new Error(INVALID_USER_NOT_FOUND_MESSAGE);
+    throw createErrorWithStatusCode(INVALID_USER_NOT_FOUND_MESSAGE, NOT_FOUND_STATUS_CODE);
   }
 
   if (userCompany.usemid !== user.usemid) {
-    throw new Error(INVALID_USER_NOT_BELONG_COMPANY_MESSAGE);
+    throw createErrorWithStatusCode(INVALID_USER_NOT_BELONG_COMPANY_MESSAGE, FORBIDDEN_STATUS_CODE);
   }
 
   if (targetCompanyId !== user.usemid) {
-    throw new Error(FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE);
+    throw createErrorWithStatusCode(FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE, FORBIDDEN_STATUS_CODE);
   }
 
   if (!['jefe', 'empleado', 'administrador'].includes(userCompany.usrol)) {
-    throw new Error(FORBIDDEN_ROL_USER_MESSAGE);
+    throw createErrorWithStatusCode(FORBIDDEN_ROL_USER_MESSAGE, FORBIDDEN_STATUS_CODE);
   }
 
   if (userCompany.usestado !== 'activo') {
-    throw new Error(INVALID_USER_STATUS_MESSAGE);
+    throw createErrorWithStatusCode(INVALID_USER_STATUS_MESSAGE, FORBIDDEN_STATUS_CODE);
   }
 }
 
@@ -103,14 +127,15 @@ async function readAlerts(
   params: FindAlertsParamsDto,
   user: LoginUserDto,
 ): Promise<FindAlertsResponseDto> {
-  const { suid, page, pageSize } = params;
+  const { suid, tipo, visto, page, pageSize } = params;
+  const visible = params.visible ?? true;
 
   if (!Number.isInteger(page) || page < 1) {
-    throw new Error(INVALID_PAGE_MESSAGE);
+    throw createErrorWithStatusCode(INVALID_PAGE_MESSAGE, BAD_REQUEST_STATUS_CODE);
   }
 
   if (!Number.isInteger(pageSize) || pageSize < 1) {
-    throw new Error(INVALID_PAGE_SIZE_MESSAGE);
+    throw createErrorWithStatusCode(INVALID_PAGE_SIZE_MESSAGE, BAD_REQUEST_STATUS_CODE);
   }
 
   try {
@@ -121,26 +146,30 @@ async function readAlerts(
     if (suid) {
       const branch = await findBranchById({ suid, suemid: user.usemid });
       if (!branch) {
-        throw new Error(INVALID_BRANCH_NOT_FOUND_MESSAGE);
+        throw createErrorWithStatusCode(INVALID_BRANCH_NOT_FOUND_MESSAGE, NOT_FOUND_STATUS_CODE);
       }
+    }
 
-      const [items, totalItems] = await Promise.all([
-        findAlertsByCompanyAndBranch(user.usemid, suid, pageSize, offset),
-        countAlertsByCompanyAndBranch(user.usemid, suid),
-      ]);
+    const filters: FindAlertsFiltersDao = {
+      emid: user.usemid,
+      visible,
+    };
 
-      return {
-        items: items.map(mapAlertRowToResponse),
-        page,
-        pageSize,
-        totalItems,
-        totalPages: Math.ceil(totalItems / pageSize),
-      };
+    if (suid !== undefined) {
+      filters.suid = suid;
+    }
+
+    if (tipo !== undefined) {
+      filters.tipo = tipo;
+    }
+
+    if (visto !== undefined) {
+      filters.visto = visto;
     }
 
     const [items, totalItems] = await Promise.all([
-      findAlertsByCompany(user.usemid, pageSize, offset),
-      countAlertsByCompany(user.usemid),
+      findAlerts({ ...filters, limit: pageSize, offset }),
+      countAlerts(filters),
     ]);
 
     return {
@@ -160,7 +189,11 @@ async function readAlerts(
 }
 
 async function readAlertAsViewed(alid: string, user: LoginUserDto): Promise<boolean> {
-  const validatedId = validateRequiredString(alid, EMPTY_ALERT_ID_MESSAGE);
+  const validatedId = alid.trim();
+
+  if (validatedId.length === 0) {
+    throw createErrorWithStatusCode(EMPTY_ALERT_ID_MESSAGE, BAD_REQUEST_STATUS_CODE);
+  }
 
   try {
     await validateAlertAccess(user, { targetCompanyId: user.usemid });
@@ -168,7 +201,7 @@ async function readAlertAsViewed(alid: string, user: LoginUserDto): Promise<bool
     const updated = await markAlertAsViewed(validatedId, user.usemid);
 
     if (!updated) {
-      throw new Error(ALERT_NOT_FOUND_MESSAGE);
+      throw createErrorWithStatusCode(ALERT_NOT_FOUND_MESSAGE, NOT_FOUND_STATUS_CODE);
     }
 
     return true;
@@ -181,10 +214,43 @@ async function readAlertAsViewed(alid: string, user: LoginUserDto): Promise<bool
   }
 }
 
+async function readAlertSummary(user: LoginUserDto): Promise<AlertSummaryResponseDto> {
+  try {
+    await validateAlertAccess(user, { targetCompanyId: user.usemid });
+
+    const [totals, byType, byBranch] = await Promise.all([
+      findAlertSummaryTotals(user.usemid),
+      findAlertSummaryByType(user.usemid),
+      findAlertSummaryByBranch(user.usemid),
+    ]);
+
+    return {
+      totalVisible: totals.totalvisible,
+      totalUnseen: totals.totalunseen,
+      byType: byType.map((item) => ({
+        type: item.type,
+        totalVisible: item.totalvisible,
+        totalUnseen: item.totalunseen,
+      })),
+      byBranch: byBranch.map((item) => ({
+        suid: item.suid,
+        sunombre: item.sunombre,
+        suidentificador: item.suidentificador,
+        totalVisible: item.totalvisible,
+        totalUnseen: item.totalunseen,
+      })),
+    };
+  } catch (error) {
+    logger.error({ err: error, requesterCompanyId: user.usemid }, 'Error reading alert summary');
+    throw error;
+  }
+}
+
 async function subscribeToAlerts(user: LoginUserDto, res: Response): Promise<void> {
   await validateAlertAccess(user, { targetCompanyId: user.usemid });
 
-  let lastPoll = new Date();
+  let lastPollUpdatedAt = new Date();
+  let lastPollAlertId = SSE_CURSOR_INITIAL_ALERT_ID;
   let pollId: ReturnType<typeof setInterval> | null = null;
 
   createSSEConnection(res, () => {
@@ -195,14 +261,17 @@ async function subscribeToAlerts(user: LoginUserDto, res: Response): Promise<voi
 
   pollId = setInterval(async () => {
     try {
-      const alerts = await findRecentUnseenAlerts(user.usemid, lastPoll);
+      const alerts = await findRecentChangedAlerts(user.usemid, lastPollUpdatedAt, lastPollAlertId);
 
       for (const alert of alerts) {
-        sendSSEData(res, 'new-alert', mapAlertRowToResponse(alert));
+        const alertResponse = mapAlertEventToResponse(alert);
+        sendSSEData(res, alert.aleventtype, alertResponse);
       }
 
       if (alerts.length > 0) {
-        lastPoll = new Date();
+        const lastAlert = alerts[alerts.length - 1]!;
+        lastPollUpdatedAt = lastAlert.alfchactualizacion;
+        lastPollAlertId = lastAlert.alid;
       }
     } catch (error) {
       logger.error({ err: error, emid: user.usemid }, '[SSE] Error polling alerts');
@@ -210,4 +279,4 @@ async function subscribeToAlerts(user: LoginUserDto, res: Response): Promise<voi
   }, SSE_POLL_INTERVAL_MS);
 }
 
-export { readAlertAsViewed, readAlerts, subscribeToAlerts };
+export { readAlertAsViewed, readAlertSummary, readAlerts, subscribeToAlerts };

@@ -1,5 +1,8 @@
 type FindAlertsParamsDto = {
   suid?: string;
+  tipo?: string;
+  visible?: boolean;
+  visto?: boolean;
   page: number;
   pageSize: number;
 };
@@ -25,6 +28,7 @@ type AlertResponseDto = {
   alvisible: boolean;
   alvisto: boolean;
   alfchcreacion: Date;
+  alfchactualizacion: Date;
 };
 
 type FindAlertsResponseDto = {
@@ -35,4 +39,32 @@ type FindAlertsResponseDto = {
   totalPages: number;
 };
 
-export type { AlertResponseDto, FindAlertsParamsDto, FindAlertsResponseDto };
+type AlertSummaryTypeDto = {
+  type: string;
+  totalVisible: number;
+  totalUnseen: number;
+};
+
+type AlertSummaryBranchDto = {
+  suid: string;
+  sunombre: string | null;
+  suidentificador: string | null;
+  totalVisible: number;
+  totalUnseen: number;
+};
+
+type AlertSummaryResponseDto = {
+  totalVisible: number;
+  totalUnseen: number;
+  byType: AlertSummaryTypeDto[];
+  byBranch: AlertSummaryBranchDto[];
+};
+
+export type {
+  AlertResponseDto,
+  AlertSummaryBranchDto,
+  AlertSummaryResponseDto,
+  AlertSummaryTypeDto,
+  FindAlertsParamsDto,
+  FindAlertsResponseDto,
+};
