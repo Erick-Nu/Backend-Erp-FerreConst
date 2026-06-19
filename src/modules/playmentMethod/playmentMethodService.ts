@@ -19,26 +19,26 @@ import {
   updatePlaymentMethodById,
 } from './playmentMethodDao.js';
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_PLAYMENT_METHOD_NAME_MESSAGE = 'Playment method name is required';
-const EMPTY_PLAYMENT_METHOD_ID_MESSAGE = 'Playment method id is required';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const INVALID_USER_NOT_FOUND_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or admin';
-const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'User is not jefe or empleado';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'User cannot access another company';
-const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
-const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
-const INVALID_PLAYMENT_METHOD_EXISTS_MESSAGE = 'Playment method already exists with that name';
-const EMPTY_PLAYMENT_METHOD_STATUS_MESSAGE = 'Playment method status is required';
-const INVALID_PLAYMENT_METHOD_UPDATE_STATUS_MESSAGE = 'Playment method status must be activo, inactivo or eliminado';
-const EMPTY_UPDATE_PLAYMENT_METHOD_MESSAGE = 'At least one field is required to update playment method';
-const FORBIDDEN_UPDATE_DELETED_PLAYMENT_METHOD_MESSAGE = 'Deleted playment method cannot be updated';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_PLAYMENT_METHOD_NAME_MESSAGE = 'El nombre de metodo de pago es requerido';
+const EMPTY_PLAYMENT_METHOD_ID_MESSAGE = 'El id de metodo de pago es requerido';
+const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'El usuario no es jefe o empleado';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
+const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamano de pagina debe ser un entero positivo';
+const INVALID_PLAYMENT_METHOD_EXISTS_MESSAGE = 'Ya existe un metodo de pago con ese nombre';
+const EMPTY_PLAYMENT_METHOD_STATUS_MESSAGE = 'El estado de metodo de pago es requerido';
+const INVALID_PLAYMENT_METHOD_UPDATE_STATUS_MESSAGE = 'El estado de metodo de pago debe ser activo, inactivo o eliminado';
+const EMPTY_UPDATE_PLAYMENT_METHOD_MESSAGE = 'Al menos un campo es requerido para actualizar el metodo de pago';
+const FORBIDDEN_UPDATE_DELETED_PLAYMENT_METHOD_MESSAGE = 'El metodo de pago eliminado no puede ser actualizado';
 
 type AccessOptions = {
   requireParentCompany: boolean;
@@ -217,7 +217,7 @@ async function readPlaymentMethod(
     });
 
     if (!playmentMethodDB) {
-      throw new Error('Playment method not found');
+      throw new Error('Metodo de pago no encontrado');
     }
 
     return playmentMethodDB;
