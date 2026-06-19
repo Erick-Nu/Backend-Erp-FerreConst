@@ -22,32 +22,32 @@ import {
 } from './proveedorDao.js';
 import type { FindProveedoresResponseDao, ProveedorRowDao } from './proveedorDao.js';
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_PROVEEDOR_ID_MESSAGE = 'Proveedor id is required';
-const EMPTY_PROVEEDOR_NAME_MESSAGE = 'Proveedor name is required';
-const EMPTY_PROVEEDOR_PHONE_MESSAGE = 'Proveedor phone is required';
-const EMPTY_PROVEEDOR_EMAIL_MESSAGE = 'Proveedor email is required';
-const EMPTY_PROVEEDOR_CATEGORY_ID_MESSAGE = 'Proveedor category id is required';
-const EMPTY_PROVEEDOR_BRAND_ID_MESSAGE = 'Proveedor brand id is required';
-const EMPTY_PROVEEDOR_STATUS_MESSAGE = 'Proveedor status is required';
-const INVALID_PROVEEDOR_EMAIL_MESSAGE = 'Proveedor email must be valid';
-const INVALID_PROVEEDOR_UPDATE_STATUS_MESSAGE = 'Proveedor status must be activo, inactivo or eliminado';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const INVALID_USER_NOT_FOUND_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or admin';
-const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'User is not jefe or empleado';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'User cannot access another company';
-const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
-const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
-const INVALID_PROVEEDOR_PHONE_MESSAGE = 'Proveedor phone must be valid';
-const INVALID_PROVEEDOR_EXISTS_MESSAGE = 'Proveedor already exists with that name';
-const EMPTY_UPDATE_PROVEEDOR_MESSAGE = 'At least one field is required to update proveedor';
-const FORBIDDEN_UPDATE_DELETED_PROVEEDOR_MESSAGE = 'Deleted proveedor cannot be updated';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_PROVEEDOR_ID_MESSAGE = 'El id de proveedor es requerido';
+const EMPTY_PROVEEDOR_NAME_MESSAGE = 'El nombre de proveedor es requerido';
+const EMPTY_PROVEEDOR_PHONE_MESSAGE = 'El telefono de proveedor es requerido';
+const EMPTY_PROVEEDOR_EMAIL_MESSAGE = 'El correo de proveedor es requerido';
+const EMPTY_PROVEEDOR_CATEGORY_ID_MESSAGE = 'El id de categoria de proveedor es requerido';
+const EMPTY_PROVEEDOR_BRAND_ID_MESSAGE = 'El id de marca de proveedor es requerido';
+const EMPTY_PROVEEDOR_STATUS_MESSAGE = 'El estado de proveedor es requerido';
+const INVALID_PROVEEDOR_EMAIL_MESSAGE = 'El correo de proveedor debe ser valido';
+const INVALID_PROVEEDOR_UPDATE_STATUS_MESSAGE = 'El estado de proveedor debe ser activo, inactivo o eliminado';
+const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'El usuario no es jefe o empleado';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
+const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamano de pagina debe ser un entero positivo';
+const INVALID_PROVEEDOR_PHONE_MESSAGE = 'El telefono de proveedor debe ser valido';
+const INVALID_PROVEEDOR_EXISTS_MESSAGE = 'Ya existe un proveedor con ese nombre';
+const EMPTY_UPDATE_PROVEEDOR_MESSAGE = 'Al menos un campo es requerido para actualizar el proveedor';
+const FORBIDDEN_UPDATE_DELETED_PROVEEDOR_MESSAGE = 'El proveedor eliminado no puede ser actualizado';
 
 type AccessOptions = {
   requireParentCompany: boolean;
@@ -221,11 +221,11 @@ async function createProveedor(proveedor: CreateProveedorDto, user: LoginUserDto
       const categoryDB = await findCategoryById(categoryProv);
 
       if (!categoryDB) {
-        throw new Error('Proveedor category does not exist');
+        throw new Error('La categoria de proveedor no existe');
       }
 
       if ([ 'inactivo', 'eliminado' ].includes(categoryDB.ctgriaestado)) {
-        throw new Error('Proveedor category is not active');
+        throw new Error('La categoria de proveedor no esta activa');
       }
     }
 
@@ -238,11 +238,11 @@ async function createProveedor(proveedor: CreateProveedorDto, user: LoginUserDto
       const brandDB = await findBrandById(brandProv);
 
       if (!brandDB) {
-        throw new Error('Proveedor brand does not exist');
+        throw new Error('La marca de proveedor no existe');
       }
 
       if ([ 'inactivo', 'eliminado' ].includes(brandDB.mrcestado)) {
-        throw new Error('Proveedor brand is not active');
+        throw new Error('La marca de proveedor no esta activa');
       }
     }
 
@@ -258,7 +258,9 @@ async function createProveedor(proveedor: CreateProveedorDto, user: LoginUserDto
     const proveedorDB = await findProveedorById({provemid, provid: proveedorId });
 
     if (!proveedorDB) {
-      throw new Error('Proveedor was not created');
+      throw new Error('El proveedor no fue creado');
+... (keep the rest)
+      throw new Error('Proveedor no encontrado');
     }
 
     return mapProveedorRowToResponse(proveedorDB);
@@ -297,7 +299,7 @@ async function readProveedor(proveedor: FindProveedorDto, user: LoginUserDto): P
     });
 
     if (!proveedorDB) {
-      throw new Error('Proveedor not found');
+      throw new Error('Proveedor no encontrado');
     }
 
     return mapProveedorRowToResponse(proveedorDB);
@@ -394,7 +396,7 @@ async function updateProveedor(proveedor: UpdateProveedorDto, user: LoginUserDto
     });
 
     if (!proveedorDB) {
-      throw new Error('Proveedor not found');
+      throw new Error('Proveedor no encontrado');
     }
 
     if (proveedorDB.provestado === 'eliminado') {
@@ -419,11 +421,11 @@ async function updateProveedor(proveedor: UpdateProveedorDto, user: LoginUserDto
       });
 
       if (!categoryDB) {
-        throw new Error('Proveedor category does not exist');
+        throw new Error('La categoria de proveedor no existe');
       }
 
       if ([ 'inactivo', 'eliminado' ].includes(categoryDB.ctgriaestado)) {
-        throw new Error('Proveedor category is not active');
+        throw new Error('La categoria de proveedor no esta activa');
       }
     }
 
@@ -434,11 +436,11 @@ async function updateProveedor(proveedor: UpdateProveedorDto, user: LoginUserDto
       });
 
       if (!brandDB) {
-        throw new Error('Proveedor brand does not exist');
+        throw new Error('La marca de proveedor no existe');
       }
 
       if ([ 'inactivo', 'eliminado' ].includes(brandDB.mrcestado)) {
-        throw new Error('Proveedor brand is not active');
+        throw new Error('La marca de proveedor no esta activa');
       }
     }
 
@@ -484,7 +486,7 @@ async function updateProveedor(proveedor: UpdateProveedorDto, user: LoginUserDto
     });
 
     if (!updatedProveedorId) {
-      throw new Error('Proveedor not found');
+      throw new Error('Proveedor no encontrado');
     }
 
     const updatedProveedorDB = await findProveedorById({
@@ -493,7 +495,7 @@ async function updateProveedor(proveedor: UpdateProveedorDto, user: LoginUserDto
     });
 
     if (!updatedProveedorDB) {
-      throw new Error('Proveedor not found');
+      throw new Error('Proveedor no encontrado');
     }
 
     return mapProveedorRowToResponse(updatedProveedorDB);
