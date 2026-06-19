@@ -33,10 +33,10 @@ const EMPTY_PROVEEDOR_STATUS_MESSAGE = 'El estado de proveedor es requerido';
 const INVALID_PROVEEDOR_EMAIL_MESSAGE = 'El correo de proveedor debe ser válido';
 const INVALID_PROVEEDOR_UPDATE_STATUS_MESSAGE = 'El estado de proveedor debe ser activo, inactivo o eliminado';
 const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
-const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no está activa';
 const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
 const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
-const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no está activo';
 const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
 const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
 const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'El usuario no es jefe o empleado';
@@ -225,7 +225,7 @@ async function createProveedor(proveedor: CreateProveedorDto, user: LoginUserDto
       }
 
       if ([ 'inactivo', 'eliminado' ].includes(categoryDB.ctgriaestado)) {
-        throw new Error('La categoría de proveedor no esta activa');
+        throw new Error('La categoría de proveedor no está activa');
       }
     }
 
@@ -242,7 +242,7 @@ async function createProveedor(proveedor: CreateProveedorDto, user: LoginUserDto
       }
 
       if ([ 'inactivo', 'eliminado' ].includes(brandDB.mrcestado)) {
-        throw new Error('La marca de proveedor no esta activa');
+        throw new Error('La marca de proveedor no está activa');
       }
     }
 
@@ -425,7 +425,7 @@ async function updateProveedor(proveedor: UpdateProveedorDto, user: LoginUserDto
       }
 
       if ([ 'inactivo', 'eliminado' ].includes(categoryDB.ctgriaestado)) {
-        throw new Error('La categoría de proveedor no esta activa');
+        throw new Error('La categoría de proveedor no está activa');
       }
     }
 
@@ -440,7 +440,7 @@ async function updateProveedor(proveedor: UpdateProveedorDto, user: LoginUserDto
       }
 
       if ([ 'inactivo', 'eliminado' ].includes(brandDB.mrcestado)) {
-        throw new Error('La marca de proveedor no esta activa');
+        throw new Error('La marca de proveedor no está activa');
       }
     }
 

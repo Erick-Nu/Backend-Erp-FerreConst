@@ -84,22 +84,22 @@ const INVALID_NON_NEGATIVE_SUBTOTAL_MESSAGE = 'El subtotal debe ser mayor o igua
 const INVALID_NON_NEGATIVE_DISCOUNT_MESSAGE = 'El descuento debe ser mayor o igual a cero';
 const INVALID_NON_NEGATIVE_TOTAL_MESSAGE = 'El total debe ser mayor o igual a cero';
 const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
-const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no está activa';
 const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
 const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
-const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no está activo';
 const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'El usuario no es jefe o empleado';
 const INVALID_BRANCH_FIND_MESSAGE = 'La sucursal no existe';
-const INVALID_BRANCH_STATUS_MESSAGE = 'La sucursal no esta activa';
+const INVALID_BRANCH_STATUS_MESSAGE = 'La sucursal no está activa';
 const INVALID_CHECKOUT_FIND_MESSAGE = 'La caja no existe';
 const INVALID_CHECKOUT_BRANCH_MESSAGE = 'La caja no pertenece a la sucursal seleccionada';
-const INVALID_CHECKOUT_STATUS_MESSAGE = 'La caja no esta activa';
+const INVALID_CHECKOUT_STATUS_MESSAGE = 'La caja no está activa';
 const INVALID_CLIENT_FIND_MESSAGE = 'El cliente no existe';
-const INVALID_CLIENT_STATUS_MESSAGE = 'El cliente no esta activo';
+const INVALID_CLIENT_STATUS_MESSAGE = 'El cliente no está activo';
 const INVALID_PLAYMENT_METHOD_FIND_MESSAGE = 'El método de pago no existe';
-const INVALID_PLAYMENT_METHOD_STATUS_MESSAGE = 'El método de pago no esta activo';
+const INVALID_PLAYMENT_METHOD_STATUS_MESSAGE = 'El método de pago no está activo';
 const INVALID_INVENTORY_PRODUCT_FIND_MESSAGE = 'El código de producto inventariable no existe';
-const INVALID_INVENTORY_PRODUCT_STATUS_MESSAGE = 'El producto inventariable no esta activo';
+const INVALID_INVENTORY_PRODUCT_STATUS_MESSAGE = 'El producto inventariable no está activo';
 const INVALID_SEQUENCE_FIND_MESSAGE = 'La secuencia no existe para esta empresa y sucursal';
 const INVALID_PROFORMA_ITEMS_DUPLICATED_PRODUCT_MESSAGE = 'La proforma tiene productos duplicados en los items';
 const INVALID_PROFORMA_TOTAL_NEGATIVE_MESSAGE = 'El total de la proforma no puede ser negativo';
@@ -112,7 +112,7 @@ const INVALID_PROFORMA_STATUS_PAY_MESSAGE = 'Solo las proformas emitidas pueden 
 const INVALID_PROFORMA_STATUS_CANCEL_MESSAGE = 'Solo las proformas emitidas pueden anularse';
 const INVALID_PROFORMA_STATUS_SEND_MESSAGE = 'No se puede enviar una proforma anulada';
 const INVALID_PROFORMA_SEND_CHANNEL_MESSAGE = 'El canal debe ser email o whatsapp';
-const INVALID_PROFORMA_CHANNEL_NOT_ACTIVE_MESSAGE = 'El canal solicitado no esta activo para esta empresa';
+const INVALID_PROFORMA_CHANNEL_NOT_ACTIVE_MESSAGE = 'El canal solicitado no está activo para esta empresa';
 const INVALID_PROFORMA_SEND_EMAIL_ADDRESS_MESSAGE = 'Falta correo del remitente o destinatario para enviar la proforma';
 const INVALID_PROFORMA_WHATSAPP_TOKEN_MESSAGE = 'WHATSAPP_APICONSULT_TOKEN es requerido para el canal whatsapp';
 const INVALID_PROFORMA_EMPTY_ITEMS_MESSAGE = 'La proforma debe contener al menos un item';
@@ -120,7 +120,7 @@ const INVALID_PROFORMA_DETAIL_REFERENCE_MESSAGE = 'El detalle de proforma no per
 const INVALID_PROFORMA_DUPLICATED_DETAIL_MESSAGE = 'La proforma tiene ids de detalle duplicados';
 const INVALID_REQUEST_NUMBER_MESSAGE = 'El valor debe ser un número válido';
 const INVALID_STOCK_FIND_MESSAGE = 'El stock no existe para esta sucursal y producto';
-const INVALID_STOCK_STATUS_MESSAGE = 'El stock no esta activo';
+const INVALID_STOCK_STATUS_MESSAGE = 'El stock no está activo';
 const INVALID_STOCK_QUANTITY_MESSAGE = 'Cantidad de stock insuficiente';
 const BAD_REQUEST_STATUS_CODE = 400;
 const CONFLICT_STATUS_CODE = 409;
@@ -1444,7 +1444,7 @@ async function sendProformaEmail(snapshot: SendProformaModel): Promise<void> {
 async function sendProformaWhatsapp(snapshot: SendProformaModel): Promise<void> {
   const whatsappApiInstance = await findSendProformaCompanyWhatsappApi(snapshot.sendemid);
   if (!whatsappApiInstance) {
-    throw new Error('La instancia de API de WhatsApp no esta configurada para esta empresa');
+    throw new Error('La instancia de API de WhatsApp no está configurada para esta empresa');
   }
 
   await sendProformaByWhatsapp(snapshot, whatsappApiInstance);

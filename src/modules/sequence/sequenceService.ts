@@ -12,9 +12,9 @@ import { findSequence, saveSequence } from './sequenceDao.js';
 const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
 const EMPTY_BRANCH_ID_MESSAGE = 'El id de sucursal es requerido';
 const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
-const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no está activa';
 const INVALID_BRANCH_FIND_MESSAGE = 'La sucursal no existe';
-const INVALID_BRANCH_STATUS_MESSAGE = 'La sucursal no esta activa';
+const INVALID_BRANCH_STATUS_MESSAGE = 'La sucursal no está activa';
 const INVALID_SEQUENCE_EXISTS_MESSAGE = 'Ya existe una secuencia para esta sucursal';
 
 async function validateCompanyAccess(seemid: string): Promise<void> {
