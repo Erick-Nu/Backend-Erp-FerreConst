@@ -49,17 +49,17 @@ const searchStocks: RequestHandler = async (req, res, next) => {
     let resolvedBranchId: string | null = null;
 
     if (Array.isArray(searchQuery)) {
-      res.status(400).json({ message: 'Search must be a string' });
+      res.status(400).json({ message: 'La busqueda debe ser un texto' });
       return;
     }
 
     if (Array.isArray(statusQuery)) {
-      res.status(400).json({ message: 'Status must be a string' });
+      res.status(400).json({ message: 'El estado debe ser un texto' });
       return;
     }
 
     if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
-      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
 
@@ -72,7 +72,7 @@ const searchStocks: RequestHandler = async (req, res, next) => {
       });
 
       if (!branchId) {
-        res.status(404).json({ message: 'Branch not found' });
+        res.status(404).json({ message: 'Sucursal no encontrada' });
         return;
       }
 
@@ -80,7 +80,7 @@ const searchStocks: RequestHandler = async (req, res, next) => {
     }
 
     if (!resolvedBranchId) {
-      res.status(400).json({ message: 'Stock branch id or branch identifier is required' });
+      res.status(400).json({ message: 'El id de sucursal o identificador de sucursal es requerido' });
       return;
     }
 
@@ -117,17 +117,17 @@ const searchStocksByCompany: RequestHandler = async (req, res, next) => {
     const statusQuery = req.query.status;
 
     if (Array.isArray(searchQuery)) {
-      res.status(400).json({ message: 'Search must be a string' });
+      res.status(400).json({ message: 'La busqueda debe ser un texto' });
       return;
     }
 
     if (Array.isArray(statusQuery)) {
-      res.status(400).json({ message: 'Status must be a string' });
+      res.status(400).json({ message: 'El estado debe ser un texto' });
       return;
     }
 
     if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
-      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
 
@@ -161,7 +161,7 @@ const searchStock: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Stock id is required' });
+      res.status(400).json({ message: 'El id de stock es requerido' });
       return;
     }
 
@@ -172,7 +172,7 @@ const searchStock: RequestHandler = async (req, res, next) => {
 
     const stockDB = await readStock(stock, user);
     if (!stockDB) {
-      res.status(404).json({ message: 'Stock not found' });
+      res.status(404).json({ message: 'Stock no encontrado' });
       return;
     }
 
@@ -187,7 +187,7 @@ const updateStockData: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Stock id is required' });
+      res.status(400).json({ message: 'El id de stock es requerido' });
       return;
     }
 
@@ -195,7 +195,7 @@ const updateStockData: RequestHandler = async (req, res, next) => {
     const { stcksuid, stckcantidad, stckestado } = body;
 
     if (typeof stcksuid !== 'string') {
-      res.status(400).json({ message: 'Stock branch id is required' });
+      res.status(400).json({ message: 'El id de sucursal de stock es requerido' });
       return;
     }
 
@@ -215,7 +215,7 @@ const updateStockData: RequestHandler = async (req, res, next) => {
     const user: LoginUserDto = req.auth!;
     const updatedStock = await updateStock(stock, user);
     if (!updatedStock) {
-      res.status(404).json({ message: 'Stock not found' });
+      res.status(404).json({ message: 'Stock no encontrado' });
       return;
     }
 

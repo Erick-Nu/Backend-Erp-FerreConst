@@ -30,29 +30,29 @@ import {
 } from './stockDao.js';
 import type { FindStocksResponseDao, StockRowDao } from './stockDao.js';
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_STOCK_ID_MESSAGE = 'Stock id is required';
-const EMPTY_STOCK_BRANCH_ID_MESSAGE = 'Stock branch id is required';
-const EMPTY_STOCK_PRODUCT_ID_MESSAGE = 'Stock product id is required';
-const EMPTY_STOCK_STATUS_MESSAGE = 'Stock status is required';
-const INVALID_STOCK_UPDATE_STATUS_MESSAGE = 'Stock status must be activo, inactivo or eliminado';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const INVALID_USER_NOT_FOUND_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or admin';
-const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'User is not jefe or empleado';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'User cannot access another company';
-const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
-const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
-const INVALID_STOCK_BRANCH_NOT_FOUND_MESSAGE = 'Stock branch does not exist';
-const INVALID_STOCK_PRODUCT_NOT_FOUND_MESSAGE = 'Stock product does not exist';
-const INVALID_STOCK_EXISTS_MESSAGE = 'Stock already exists for this branch and product';
-const EMPTY_UPDATE_STOCK_MESSAGE = 'At least one field is required to update stock';
-const FORBIDDEN_UPDATE_DELETED_STOCK_MESSAGE = 'Deleted stock cannot be updated';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_STOCK_ID_MESSAGE = 'El id de stock es requerido';
+const EMPTY_STOCK_BRANCH_ID_MESSAGE = 'El id de sucursal de stock es requerido';
+const EMPTY_STOCK_PRODUCT_ID_MESSAGE = 'El id de producto de stock es requerido';
+const EMPTY_STOCK_STATUS_MESSAGE = 'El estado de stock es requerido';
+const INVALID_STOCK_UPDATE_STATUS_MESSAGE = 'El estado de stock debe ser activo, inactivo o eliminado';
+const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'El usuario no es jefe o empleado';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
+const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamano de pagina debe ser un entero positivo';
+const INVALID_STOCK_BRANCH_NOT_FOUND_MESSAGE = 'La sucursal de stock no existe';
+const INVALID_STOCK_PRODUCT_NOT_FOUND_MESSAGE = 'El producto de stock no existe';
+const INVALID_STOCK_EXISTS_MESSAGE = 'Ya existe un stock para esta sucursal y producto';
+const EMPTY_UPDATE_STOCK_MESSAGE = 'Al menos un campo es requerido para actualizar el stock';
+const FORBIDDEN_UPDATE_DELETED_STOCK_MESSAGE = 'El stock eliminado no puede ser actualizado';
 
 type AccessOptions = {
   requireParentCompany: boolean;
@@ -324,7 +324,7 @@ async function createStock(stock: CreateStockDto, user: LoginUserDto): Promise<S
     });
 
     if (!stockDB) {
-      throw new Error('Stock was not created');
+      throw new Error('El stock no fue creado');
     }
 
     await syncStockAlertForStock(stckemid, stcksuid, stckprdtoid);
@@ -365,7 +365,7 @@ async function readStock(stock: FindStockDto, user: LoginUserDto): Promise<Stock
     });
 
     if (!stockDB) {
-      throw new Error('Stock not found');
+      throw new Error('Stock no encontrado');
     }
 
     return mapStockRowToResponse(stockDB);
@@ -480,11 +480,11 @@ async function updateStock(stock: UpdateStockDto, user: LoginUserDto): Promise<S
     });
 
     if (!stockDB) {
-      throw new Error('Stock not found');
+      throw new Error('Stock no encontrado');
     }
 
     if (stockDB.stcksuid !== stcksuid) {
-      throw new Error('Stock not found');
+      throw new Error('Stock no encontrado');
     }
 
     if (stockDB.stckestado === 'eliminado') {
