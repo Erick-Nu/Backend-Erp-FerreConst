@@ -31,28 +31,28 @@ import {
   validateRuc,
 } from '../../utils/validation.js';
 
-const EMPTY_RUC_MESSAGE = 'Company RUC is required';
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_COMPANY_NAME_MESSAGE = 'Company social reason is required';
-const EMPTY_COMPANY_EMAIL_MESSAGE = 'Company email is required';
-const EMPTY_COMPANY_CODE_MESSAGE = 'Company code is required';
-const EMPTY_COMPANY_STATUS_MESSAGE = 'Company status is required';
-const EMPTY_COMPANY_LOGO_MESSAGE = 'Company logo is required';
-const INVALID_COMPANY_EMAIL_MESSAGE = 'Company email must be valid';
-const INVALID_COMPANY_CODE_MESSAGE = 'Company code must be exactly 4 alphanumeric characters';
-const INVALID_COMPANY_UPDATE_STATUS_MESSAGE = 'Company status must be activo, inactivo or eliminado';
-const EMPTY_UPDATE_COMPANY_MESSAGE = 'At least one field is required to update company';
-const FORBIDDEN_UPDATE_DELETED_COMPANY_MESSAGE = 'Deleted company status cannot be changed';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company code is not invalid';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or administrador';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const INVALID_USER_NOT_FOUND_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'User cannot access another company';
-const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
+const EMPTY_RUC_MESSAGE = 'El RUC de la empresa es requerido';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_COMPANY_NAME_MESSAGE = 'La razon social de empresa es requerida';
+const EMPTY_COMPANY_EMAIL_MESSAGE = 'El correo de empresa es requerido';
+const EMPTY_COMPANY_CODE_MESSAGE = 'El codigo de empresa es requerido';
+const EMPTY_COMPANY_STATUS_MESSAGE = 'El estado de empresa es requerido';
+const EMPTY_COMPANY_LOGO_MESSAGE = 'El logo de empresa es requerido';
+const INVALID_COMPANY_EMAIL_MESSAGE = 'El correo de empresa debe ser valido';
+const INVALID_COMPANY_CODE_MESSAGE = 'El codigo de empresa debe tener exactamente 4 caracteres alfanumericos';
+const INVALID_COMPANY_UPDATE_STATUS_MESSAGE = 'El estado de empresa debe ser activo, inactivo o eliminado';
+const EMPTY_UPDATE_COMPANY_MESSAGE = 'Al menos un campo es requerido para actualizar la empresa';
+const FORBIDDEN_UPDATE_DELETED_COMPANY_MESSAGE = 'La empresa eliminada no puede cambiar de estado';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const INVALID_COMPANY_FIND_MESSAGE = 'El codigo de empresa no es invalido';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
+const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
 const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
 
 type AccessOptions = {
@@ -158,17 +158,17 @@ async function createCompany(company: CreateCompanyDto, user: LoginUserDto): Pro
 
     const companyByRucDB = await findCompanyByRuc(emruc);
     if (companyByRucDB) {
-      throw new Error('Company already exists with that RUC');
+      throw new Error('Ya existe una empresa con ese RUC');
     }
 
     const companyByEmailDB = await findCompanyByEmail(emcorreo);
     if (companyByEmailDB) {
-      throw new Error('Company already exists with that email');
+      throw new Error('Ya existe una empresa con ese correo');
     }
 
     const companyByCodeDB = await findCompanyByCode(emcodigo);
     if (companyByCodeDB) {
-      throw new Error('Company already exists with that code');
+      throw new Error('Ya existe una empresa con ese codigo');
     }
 
     const companyDB: CreateCompanyDto = {
@@ -183,7 +183,7 @@ async function createCompany(company: CreateCompanyDto, user: LoginUserDto): Pro
     const newCompanyDB = await findCompanyById(companyId);
 
     if (!newCompanyDB) {
-      throw new Error('Company was not created');
+      throw new Error('La empresa no fue creada');
     }
 
     const companyResponse: CompanyResponseDto = {
@@ -265,7 +265,7 @@ async function readCompany(id: FindCompanyDto, user: LoginUserDto): Promise<Comp
 
     const companyDB = await findCompanyById(validatedId);
     if (!companyDB) {
-      throw new Error('Company not found');
+      throw new Error('Empresa no encontrada');
     }
 
     const companyResponse: CompanyResponseDto = {
@@ -363,13 +363,13 @@ async function updateCompany(company: UpdateCompanyDto, user: LoginUserDto): Pro
     }
 
     if (companyDB.emestado !== 'activo') {
-      throw new Error('Inactive or deleted company cannot be updated');
+      throw new Error('La empresa inactiva o eliminada no puede ser actualizada');
     }
 
     if (emcorreo) {
       const companyByEmailDB = await findCompanyByEmail(emcorreo);
       if (companyByEmailDB) {
-        throw new Error('Company already exists with that email');
+        throw new Error('Ya existe una empresa con ese correo');
       }
     }
 
@@ -397,7 +397,7 @@ async function updateCompany(company: UpdateCompanyDto, user: LoginUserDto): Pro
     const updatedCompanyDB = await updateCompanyById(dataDB, emid);
 
     if (!updatedCompanyDB) {
-      throw new Error('Error updating company');
+      throw new Error('Error al actualizar la empresa');
     }
 
     const companyResponse: CompanyResponseDto = {

@@ -53,17 +53,17 @@ const searchCompanies: RequestHandler = async (req, res, next) => {
     const statusQuery = req.query.status;
 
     if (Array.isArray(searchQuery)) {
-      res.status(400).json({ message: 'Search must be a string' });
+      res.status(400).json({ message: 'La busqueda debe ser un texto' });
       return;
     }
 
     if (Array.isArray(statusQuery)) {
-      res.status(400).json({ message: 'Status must be a string' });
+      res.status(400).json({ message: 'El estado debe ser un texto' });
       return;
     }
 
     if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
-      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
 
@@ -96,7 +96,7 @@ const searchCompany: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Company id is required' });
+      res.status(400).json({ message: 'El id de empresa es requerido' });
       return;
     }
 
@@ -108,7 +108,7 @@ const searchCompany: RequestHandler = async (req, res, next) => {
     const companyDB = await readCompany(company, user);
 
     if (!companyDB) {
-      res.status(404).json({ message: 'Company not found' });
+      res.status(404).json({ message: 'Empresa no encontrada' });
       return;
     }
 
@@ -124,7 +124,7 @@ const updateCompanyStatus: RequestHandler = async (req, res, next) => {
     const { emestado } = req.body;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Company id is required' });
+      res.status(400).json({ message: 'El id de empresa es requerido' });
       return;
     }
 
@@ -138,11 +138,11 @@ const updateCompanyStatus: RequestHandler = async (req, res, next) => {
     const updated = await updateCompanyWithStatus(company, user);
 
     if (!updated) {
-      res.status(404).json({ message: 'Company not found' });
+      res.status(404).json({ message: 'Empresa no encontrada' });
       return;
     }
 
-    res.status(200).json({ message: 'Company status updated' });
+    res.status(200).json({ message: 'Estado de empresa actualizado' });
   } catch (error) {
     next(error);
   }
@@ -153,7 +153,7 @@ const updateCompanyData: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Company id is required' });
+      res.status(400).json({ message: 'El id de empresa es requerido' });
       return;
     }
 
@@ -184,7 +184,7 @@ const updateCompanyData: RequestHandler = async (req, res, next) => {
     const updatedCompany = await updateCompany(company, user);
 
     if (!updatedCompany) {
-      res.status(404).json({ message: 'Company not found' });
+      res.status(404).json({ message: 'Empresa no encontrada' });
       return;
     }
 
