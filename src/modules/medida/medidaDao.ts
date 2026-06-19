@@ -26,6 +26,8 @@ type FindMedidaByAbbreviationDao = {
 type FindMedidasParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type UpdateColumnMedidaDao = {
@@ -186,36 +188,86 @@ async function findMedidaByAbbreviation(medida: FindMedidaByAbbreviationDao): Pr
   }
 }
 
-const FIND_MEDIDAS_QUERY = `
-  select mdiaid, mdiaemid, mdianombre, mdiaabreviatura, mdiafchregistro, mdiaestado
-  from medida
-  where mdiaemid = $1
-  order by mdiafchregistro desc
-  limit $2
-  offset $3
-`;
+type MedidaQueryValue = string | number;
 
-const COUNT_MEDIDAS_QUERY = `
-  select count(*)::int as total
-  from medida
-  where mdiaemid = $1
-`;
+function buildFindMedidasWhereClause(
+  companyId: string,
+  params: Pick<FindMedidasParamsDao, 'search' | 'status'>,
+): { clause: string; values: MedidaQueryValue[] } {
+  const conditions = ['mdiaemid = $1'];
+  const values: MedidaQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`mdiaestado = $${values.length}`);
+  } else {
+    conditions.push(`mdiaestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`lower(trim(mdianombre)) like $${searchParamIndex}`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindMedidasQuery(
+  params: FindMedidasParamsDao,
+  companyId: string,
+): { query: string; values: MedidaQueryValue[] } {
+  const where = buildFindMedidasWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select mdiaid, mdiaemid, mdianombre, mdiaabreviatura, mdiafchregistro, mdiaestado
+    from medida
+    where ${where.clause}
+    order by mdiafchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountMedidasQuery(
+  params: FindMedidasParamsDao,
+  companyId: string,
+): { query: string; values: MedidaQueryValue[] } {
+  const where = buildFindMedidasWhereClause(companyId, params);
+  const query = `
+    select count(*)::int as total
+    from medida
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
 
 async function findMedidas(
   params: FindMedidasParamsDao,
   companyId: string,
 ): Promise<FindMedidasResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<MedidaRowDao[]>(FIND_MEDIDAS_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findMedidasQuery = buildFindMedidasQuery(params, companyId);
+    const countMedidasQuery = buildCountMedidasQuery(params, companyId);
+
+    const [result, medidasTotalDB] = await Promise.all([
+      sql.unsafe<MedidaRowDao[]>(findMedidasQuery.query, findMedidasQuery.values),
+      sql.unsafe<{ total: number }[]>(countMedidasQuery.query, countMedidasQuery.values),
     ]);
 
-    const medidasTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_MEDIDAS_QUERY, [companyId]);
     const totalItems = medidasTotalDB[0];
 
     if (!totalItems) {
@@ -232,7 +284,7 @@ async function findMedidas(
 
     return medidasDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding medidas');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding medidas');
     throw new Error('Error finding medidas');
   }
 }

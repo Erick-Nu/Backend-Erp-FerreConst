@@ -20,6 +20,8 @@ type UpdateMedidaDto = {
 type FindMedidasParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type MedidaResponseDto = {
