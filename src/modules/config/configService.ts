@@ -19,8 +19,8 @@ import {
 } from './configDao.js';
 
 const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
-const EMPTY_CONFIG_KEY_MESSAGE = 'La clave de configuracion es requerida';
-const EMPTY_CONFIG_VALUE_MESSAGE = 'El valor de configuracion es requerido';
+const EMPTY_CONFIG_KEY_MESSAGE = 'La clave de configuración es requerida';
+const EMPTY_CONFIG_VALUE_MESSAGE = 'El valor de configuración es requerido';
 const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
 const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
 const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
@@ -29,8 +29,8 @@ const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
 const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
 const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
 const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
-const INVALID_CONFIG_EXISTS_MESSAGE = 'Ya existe una configuracion con esa clave';
-const EMPTY_UPDATE_CONFIG_MESSAGE = 'Al menos un campo es requerido para actualizar la configuracion';
+const INVALID_CONFIG_EXISTS_MESSAGE = 'Ya existe una configuración con esa clave';
+const EMPTY_UPDATE_CONFIG_MESSAGE = 'Al menos un campo es requerido para actualizar la configuración';
 
 type AccessOptions = {
   requireParentCompany: boolean;

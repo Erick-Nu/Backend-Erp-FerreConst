@@ -39,12 +39,12 @@ async function readDocumentAsBase64(documentPath: string): Promise<string> {
 
 function normalizeWhatsappPhone(phone: string | null): string {
   if (typeof phone !== 'string') {
-    throw new Error('El telefono del cliente es requerido para enviar proforma por WhatsApp');
+    throw new Error('El teléfono del cliente es requerido para enviar proforma por WhatsApp');
   }
 
   const cleanedPhone = phone.trim();
   if (!/^09\d{8}$/.test(cleanedPhone)) {
-    throw new Error('El telefono del cliente debe ser un numero movil valido de Ecuador para enviar proforma por WhatsApp');
+    throw new Error('El teléfono del cliente debe ser un número movil válido de Ecuador para enviar proforma por WhatsApp');
   }
 
   return `593${cleanedPhone.slice(1)}`;

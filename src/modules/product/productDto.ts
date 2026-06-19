@@ -67,7 +67,7 @@ type ProductMedidaResponseDto = {
 type ProductResponseDto = {
   prdtoid: string;
   prdtoemid: string;
-  categoria: ProductCategoryResponseDto;
+  categoría: ProductCategoryResponseDto;
   marca: ProductBrandResponseDto;
   proveedor: ProductProveedorResponseDto;
   medida: ProductMedidaResponseDto;

@@ -21,7 +21,7 @@ type DetailTableLayout = {
 };
 
 type DetailRow = {
-  numero: string;
+  número: string;
   descripcion: string;
   cantidad: string;
   precioUnitario: string;
@@ -421,12 +421,12 @@ function drawHeader(
   document
     .fillColor(COLOR_TEXT)
     .fontSize(7.4)
-    .text(`Identificación: ${data.cliente.identificacion ?? '-'}`, leftX, infoY + 48, {
+    .text(`Identificación: ${data.cliente.identificación ?? '-'}`, leftX, infoY + 48, {
       width: 250,
       ellipsis: true,
       lineBreak: false,
     })
-    .text(`Teléfono: ${data.cliente.telefono ?? '-'}`, leftX, infoY + 61, {
+    .text(`Teléfono: ${data.cliente.teléfono ?? '-'}`, leftX, infoY + 61, {
       width: 250,
       ellipsis: true,
       lineBreak: false,
@@ -436,7 +436,7 @@ function drawHeader(
       ellipsis: true,
       lineBreak: false,
     })
-    .text(`Dirección: ${data.cliente.direccion ?? '-'}`, leftX, infoY + 87, {
+    .text(`Dirección: ${data.cliente.dirección ?? '-'}`, leftX, infoY + 87, {
       width: 250,
       ellipsis: true,
       lineBreak: false,
@@ -607,7 +607,7 @@ function drawDetailRow(
   document
     .fillColor(COLOR_MUTED)
     .fontSize(7.3)
-    .text(row.numero, tableX, textY + 2, {
+    .text(row.número, tableX, textY + 2, {
       width: numberWidth,
       align: 'center',
       lineBreak: false,
@@ -646,8 +646,8 @@ async function drawDetailTable(
   startY: number,
 ): Promise<void> {
   const tableData: DetailRow[] = data.detalle.map((item, index) => ({
-    numero: String(index + 1).padStart(2, '0'),
-    descripcion: `${item.descripcion}\nCódigo: ${item.codigo ?? 'N/A'}`,
+    número: String(index + 1).padStart(2, '0'),
+    descripcion: `${item.descripcion}\nCódigo: ${item.código ?? 'N/A'}`,
     cantidad: formatQuantity(item.cantidad),
     precioUnitario: formatCurrency(item.precioUnitario),
     total: formatCurrency(item.precioTotal),

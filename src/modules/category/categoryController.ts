@@ -80,7 +80,7 @@ const searchCategory: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'El id de categoria es requerido' });
+      res.status(400).json({ message: 'El id de categoría es requerido' });
       return;
     }
 
@@ -105,7 +105,7 @@ const updateCategoryData: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'El id de categoria es requerido' });
+      res.status(400).json({ message: 'El id de categoría es requerido' });
       return;
     }
 

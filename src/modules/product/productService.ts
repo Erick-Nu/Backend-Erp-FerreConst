@@ -28,11 +28,11 @@ import type { FindProductsResponseDao, ProductRowDao } from './productDao.js';
 
 const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
 const EMPTY_PRODUCT_ID_MESSAGE = 'El id de producto es requerido';
-const EMPTY_PRODUCT_CATEGORY_ID_MESSAGE = 'El id de categoria de producto es requerido';
+const EMPTY_PRODUCT_CATEGORY_ID_MESSAGE = 'El id de categoría de producto es requerido';
 const EMPTY_PRODUCT_BRAND_ID_MESSAGE = 'El id de marca de producto es requerido';
 const EMPTY_PRODUCT_PROVEEDOR_ID_MESSAGE = 'El id de proveedor de producto es requerido';
 const EMPTY_PRODUCT_MEDIDA_ID_MESSAGE = 'El id de medida de producto es requerido';
-const EMPTY_PRODUCT_CODE_MESSAGE = 'El codigo de producto es requerido';
+const EMPTY_PRODUCT_CODE_MESSAGE = 'El código de producto es requerido';
 const EMPTY_PRODUCT_NAME_MESSAGE = 'El nombre de producto es requerido';
 const EMPTY_PRODUCT_IMAGE_MESSAGE = 'La imagen de producto es requerida';
 const EMPTY_PRODUCT_STATUS_MESSAGE = 'El estado de producto es requerido';
@@ -47,11 +47,11 @@ const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administra
 const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'El usuario no es jefe o empleado';
 const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
 const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
-const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
-const INVALID_PAGE_SIZE_MESSAGE = 'El tamaño de pagina debe ser un entero positivo';
-const INVALID_PRODUCT_CODE_EXISTS_MESSAGE = 'Ya existe un producto con ese codigo';
+const INVALID_PAGE_MESSAGE = 'La página debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamaño de página debe ser un entero positivo';
+const INVALID_PRODUCT_CODE_EXISTS_MESSAGE = 'Ya existe un producto con ese código';
 const INVALID_PRODUCT_NAME_EXISTS_MESSAGE = 'Ya existe un producto con ese nombre';
-const INVALID_PRODUCT_CATEGORY_NOT_FOUND_MESSAGE = 'La categoria de producto no existe';
+const INVALID_PRODUCT_CATEGORY_NOT_FOUND_MESSAGE = 'La categoría de producto no existe';
 const INVALID_PRODUCT_BRAND_NOT_FOUND_MESSAGE = 'La marca de producto no existe';
 const INVALID_PRODUCT_PROVEEDOR_NOT_FOUND_MESSAGE = 'El proveedor de producto no existe';
 const INVALID_PRODUCT_MEDIDA_NOT_FOUND_MESSAGE = 'La medida de producto no existe';
@@ -75,7 +75,7 @@ function mapProductRowToResponse(product: ProductRowDao): ProductResponseDto {
   return {
     prdtoid: product.prdtoid,
     prdtoemid: product.prdtoemid,
-    categoria: {
+    categoría: {
       ctgriaid: product.prdtoctgriaid,
       ctgnombre: product.ctgnombre ?? null,
       ctgriadescripcion: product.ctgriadescripcion ?? null,

@@ -60,7 +60,7 @@ async function savePlaymentMethod(playmentMethod: CreatePlaymentMethodDao): Prom
 
     const playmentMethodDB = result[0];
     if (!playmentMethodDB) {
-      throw new Error('El metodo de pago no fue creado');
+      throw new Error('El método de pago no fue creado');
     }
 
     logger.info(

@@ -20,8 +20,8 @@ import {
 } from './categoryDao.js';
 
 const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
-const EMPTY_CATEGORY_NAME_MESSAGE = 'El nombre de categoria es requerido';
-const EMPTY_CATEGORY_ID_MESSAGE = 'El id de categoria es requerido';
+const EMPTY_CATEGORY_NAME_MESSAGE = 'El nombre de categoría es requerido';
+const EMPTY_CATEGORY_ID_MESSAGE = 'El id de categoría es requerido';
 const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
 const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
 const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
@@ -32,14 +32,14 @@ const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administra
 const FORBIDDEN_ROL_USER_JEFE_OR_EMPLEADO_MESSAGE = 'El usuario no es jefe o empleado';
 const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
 const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
-const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
-const INVALID_PAGE_SIZE_MESSAGE = 'El tamaño de pagina debe ser un entero positivo';
-const INVALID_CATEGORY_EXISTS_MESSAGE = 'Ya existe una categoria con ese nombre';
-const EMPTY_CATEGORY_STATUS_MESSAGE = 'El estado de categoria es requerido';
-const INVALID_CATEGORY_UPDATE_STATUS_MESSAGE = 'El estado de categoria debe ser activo, inactivo o eliminado';
-const EMPTY_CATEGORY_DESCRIPTION_MESSAGE = 'La descripcion de categoria es requerida';
-const EMPTY_UPDATE_CATEGORY_MESSAGE = 'Al menos un campo es requerido para actualizar la categoria';
-const FORBIDDEN_UPDATE_DELETED_CATEGORY_MESSAGE = 'La categoria eliminada no puede ser actualizada';
+const INVALID_PAGE_MESSAGE = 'La página debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamaño de página debe ser un entero positivo';
+const INVALID_CATEGORY_EXISTS_MESSAGE = 'Ya existe una categoría con ese nombre';
+const EMPTY_CATEGORY_STATUS_MESSAGE = 'El estado de categoría es requerido';
+const INVALID_CATEGORY_UPDATE_STATUS_MESSAGE = 'El estado de categoría debe ser activo, inactivo o eliminado';
+const EMPTY_CATEGORY_DESCRIPTION_MESSAGE = 'La descripcion de categoría es requerida';
+const EMPTY_UPDATE_CATEGORY_MESSAGE = 'Al menos un campo es requerido para actualizar la categoría';
+const FORBIDDEN_UPDATE_DELETED_CATEGORY_MESSAGE = 'La categoría eliminada no puede ser actualizada';
 
 type AccessOptions = {
   requireParentCompany: boolean;

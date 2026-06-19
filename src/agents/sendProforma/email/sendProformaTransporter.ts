@@ -23,7 +23,7 @@ async function findCompanyEmailCredentials(sendemid: string): Promise<{ emailUse
 
   if (!emailUser || !emailPassword) {
     logger.error(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Configuración de correo incompleta para empresa: ${sendemid}`);
-    throw new Error(`Falta la configuracion de correo de empresa para enviar proforma: ${sendemid}`);
+    throw new Error(`Falta la configuración de correo de empresa para enviar proforma: ${sendemid}`);
   }
 
   return { emailUser, emailPassword };
@@ -35,7 +35,7 @@ function createAgentTransporter(emailUser: string, emailPassword: string): Trans
   const smtpSecure = env.smtpSecure ?? false;
 
   if (!smtpHost || !smtpPort || !emailUser || !emailPassword) {
-    throw new Error('Falta la configuracion SMTP para enviar proforma');
+    throw new Error('Falta la configuración SMTP para enviar proforma');
   }
 
   return createTransporter({

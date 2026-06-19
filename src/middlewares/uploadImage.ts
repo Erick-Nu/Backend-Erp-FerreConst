@@ -66,7 +66,7 @@ function validateImageSize(
   }
 
   if (maxSizeBytes <= 0) {
-    throw new Error('Tamano maximo de imagen invalido');
+    throw new Error('Tamano maximo de imagen inválido');
   }
 
   if (uploadedImage.size <= 0 || uploadedImage.size > maxSizeBytes) {

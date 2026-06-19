@@ -8,14 +8,14 @@ type ProformaPdfCompanyData = {
 
 type ProformaPdfClientData = {
   nombre: string;
-  identificacion?: string;
+  identificación?: string;
   correo?: string;
-  direccion?: string;
-  telefono?: string;
+  dirección?: string;
+  teléfono?: string;
 };
 
 type ProformaPdfItemData = {
-  codigo?: string;
+  código?: string;
   descripcion: string;
   cantidad: number;
   precioUnitario: number;

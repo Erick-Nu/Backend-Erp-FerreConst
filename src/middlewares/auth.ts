@@ -16,7 +16,7 @@ const authenticate: RequestHandler = (req, res, next) => {
       typeof usemid !== 'string' ||
       (usrol !== 'administrador' && usrol !== 'jefe' && usrol !== 'empleado')
     ) {
-      throw new Error('La informacion del token es invalida');
+      throw new Error('La informacion del token es inválida');
     }
 
     req.auth = {

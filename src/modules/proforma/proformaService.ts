@@ -67,17 +67,17 @@ const EMPTY_PROFORMA_ID_MESSAGE = 'El id de proforma es requerido';
 const EMPTY_BRANCH_ID_MESSAGE = 'El id de sucursal es requerido';
 const EMPTY_CHECKOUT_ID_MESSAGE = 'El id de caja es requerido';
 const EMPTY_CLIENT_ID_MESSAGE = 'El id de cliente es requerido';
-const EMPTY_PLAYMENT_METHOD_ID_MESSAGE = 'El id de metodo de pago es requerido';
-const EMPTY_PRODUCT_CODE_MESSAGE = 'El codigo de producto es requerido';
-const EMPTY_PRODUCT_CODE_FOR_INVENTORY_MESSAGE = 'El codigo de producto es requerido para items inventariables';
-const INVALID_PRODUCT_CODE_MESSAGE = 'El codigo de producto debe ser un texto';
+const EMPTY_PLAYMENT_METHOD_ID_MESSAGE = 'El id de método de pago es requerido';
+const EMPTY_PRODUCT_CODE_MESSAGE = 'El código de producto es requerido';
+const EMPTY_PRODUCT_CODE_FOR_INVENTORY_MESSAGE = 'El código de producto es requerido para items inventariables';
+const INVALID_PRODUCT_CODE_MESSAGE = 'El código de producto debe ser un texto';
 const EMPTY_PRODUCT_NAME_MESSAGE = 'El nombre de producto es requerido';
 const INVALID_POSITIVE_ITEM_TOTAL_MESSAGE = 'El total del item debe ser mayor a cero';
 const EMPTY_DETAIL_ID_MESSAGE = 'El id de detalle de proforma es requerido';
 const EMPTY_ITEMS_MESSAGE = 'Los items de proforma son requeridos';
 const INVALID_INVENTORIABLE_FLAG_MESSAGE = 'dprfmaesinventariable debe ser un booleano';
-const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
-const INVALID_PAGE_SIZE_MESSAGE = 'El tamaño de pagina debe ser un entero positivo';
+const INVALID_PAGE_MESSAGE = 'La página debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamaño de página debe ser un entero positivo';
 const INVALID_POSITIVE_QUANTITY_MESSAGE = 'La cantidad debe ser mayor a cero';
 const INVALID_POSITIVE_UNIT_PRICE_MESSAGE = 'El precio unitario debe ser mayor a cero';
 const INVALID_NON_NEGATIVE_SUBTOTAL_MESSAGE = 'El subtotal debe ser mayor o igual a cero';
@@ -96,9 +96,9 @@ const INVALID_CHECKOUT_BRANCH_MESSAGE = 'La caja no pertenece a la sucursal sele
 const INVALID_CHECKOUT_STATUS_MESSAGE = 'La caja no esta activa';
 const INVALID_CLIENT_FIND_MESSAGE = 'El cliente no existe';
 const INVALID_CLIENT_STATUS_MESSAGE = 'El cliente no esta activo';
-const INVALID_PLAYMENT_METHOD_FIND_MESSAGE = 'El metodo de pago no existe';
-const INVALID_PLAYMENT_METHOD_STATUS_MESSAGE = 'El metodo de pago no esta activo';
-const INVALID_INVENTORY_PRODUCT_FIND_MESSAGE = 'El codigo de producto inventariable no existe';
+const INVALID_PLAYMENT_METHOD_FIND_MESSAGE = 'El método de pago no existe';
+const INVALID_PLAYMENT_METHOD_STATUS_MESSAGE = 'El método de pago no esta activo';
+const INVALID_INVENTORY_PRODUCT_FIND_MESSAGE = 'El código de producto inventariable no existe';
 const INVALID_INVENTORY_PRODUCT_STATUS_MESSAGE = 'El producto inventariable no esta activo';
 const INVALID_SEQUENCE_FIND_MESSAGE = 'La secuencia no existe para esta empresa y sucursal';
 const INVALID_PROFORMA_ITEMS_DUPLICATED_PRODUCT_MESSAGE = 'La proforma tiene productos duplicados en los items';
@@ -118,7 +118,7 @@ const INVALID_PROFORMA_WHATSAPP_TOKEN_MESSAGE = 'WHATSAPP_APICONSULT_TOKEN es re
 const INVALID_PROFORMA_EMPTY_ITEMS_MESSAGE = 'La proforma debe contener al menos un item';
 const INVALID_PROFORMA_DETAIL_REFERENCE_MESSAGE = 'El detalle de proforma no pertenece a esta proforma';
 const INVALID_PROFORMA_DUPLICATED_DETAIL_MESSAGE = 'La proforma tiene ids de detalle duplicados';
-const INVALID_REQUEST_NUMBER_MESSAGE = 'El valor debe ser un numero valido';
+const INVALID_REQUEST_NUMBER_MESSAGE = 'El valor debe ser un número válido';
 const INVALID_STOCK_FIND_MESSAGE = 'El stock no existe para esta sucursal y producto';
 const INVALID_STOCK_STATUS_MESSAGE = 'El stock no esta activo';
 const INVALID_STOCK_QUANTITY_MESSAGE = 'Cantidad de stock insuficiente';
@@ -617,7 +617,7 @@ function mapProformaToPdfInput(proforma: ProformaRowDao, items: ProformaItemRowD
   };
 
   if (proforma.clnteidentificacion) {
-    cliente.identificacion = proforma.clnteidentificacion;
+    cliente.identificación = proforma.clnteidentificacion;
   }
 
   if (proforma.clntecorreo) {
@@ -625,11 +625,11 @@ function mapProformaToPdfInput(proforma: ProformaRowDao, items: ProformaItemRowD
   }
 
   if (proforma.clntedireccion) {
-    cliente.direccion = proforma.clntedireccion;
+    cliente.dirección = proforma.clntedireccion;
   }
 
   if (proforma.clntetelefono) {
-    cliente.telefono = proforma.clntetelefono;
+    cliente.teléfono = proforma.clntetelefono;
   }
 
   const detalle: ProformaPdfInput['detalle'] = items.map((item) => {
@@ -641,7 +641,7 @@ function mapProformaToPdfInput(proforma: ProformaRowDao, items: ProformaItemRowD
     };
 
     if (item.dprfmacodigo) {
-      itemPdf.codigo = item.dprfmacodigo;
+      itemPdf.código = item.dprfmacodigo;
     }
 
     return itemPdf;

@@ -9,7 +9,7 @@ type AuthTokenPayload = {
   usrol: Role;
 };
 
-const INVALID_TOKEN_MESSAGE = 'Token invalido o expirado';
+const INVALID_TOKEN_MESSAGE = 'Token inválido o expirado';
 const MISSING_AUTH_HEADER_MESSAGE = 'El encabezado de autorizacion es requerido';
 const INVALID_AUTH_HEADER_MESSAGE = 'Debe usar token Bearer en el encabezado de autorizacion';
 

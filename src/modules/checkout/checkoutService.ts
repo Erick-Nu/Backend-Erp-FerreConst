@@ -41,8 +41,8 @@ const INVALID_BRANCH_FIND_MESSAGE = 'La sucursal no existe';
 const INVALID_BRANCH_STATUS_MESSAGE = 'La sucursal no esta activa';
 const INVALID_CHECKOUT_IDENTIFIER_EXISTS_MESSAGE = 'Ya existe una caja con ese identificador en esta sucursal';
 const INVALID_CHECKOUT_UPDATE_STATUS_MESSAGE = 'El estado de caja debe ser activo, inactivo o eliminado';
-const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
-const INVALID_PAGE_SIZE_MESSAGE = 'El tamaño de pagina debe ser un entero positivo';
+const INVALID_PAGE_MESSAGE = 'La página debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamaño de página debe ser un entero positivo';
 const FORBIDDEN_UPDATE_DELETED_CHECKOUT_MESSAGE = 'La caja eliminada no puede ser actualizada';
 const CONFLICT_STATUS_CODE = 409;
 

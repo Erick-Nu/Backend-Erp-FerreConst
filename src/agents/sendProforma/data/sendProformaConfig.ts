@@ -15,7 +15,7 @@ type SendProformaChannel = 'email' | 'whatsapp';
 
 const FIND_SEND_PROFORMA_CONFIGURED_COMPANY_RUC_QUERY = `
   select cfvalor
-  from configuracion
+  from configuración
   where cfclave = 'sendproforma.email.empresa'
   limit 1
 `;
@@ -33,7 +33,7 @@ async function findSendProformaConfiguredCompanyRucValue(): Promise<string | und
 
 const FIND_SEND_PROFORMA_COMPANY_CONFIG_ROWS_QUERY = `
   select cfclave, cfvalor
-  from configuracion
+  from configuración
   where cfemid = $1 and cfclave like 'sendproforma%'
 `;
 
@@ -42,7 +42,7 @@ async function findSendProformaCompanyConfigRows(sendemid: string): Promise<Conf
     return await sql.unsafe<ConfigRow[]>(FIND_SEND_PROFORMA_COMPANY_CONFIG_ROWS_QUERY, [sendemid]);
   } catch (error) {
     logger.error({ err: error, sendemid }, `${SEND_PROFORMA_LOG_PREFIX} Error finding send proforma company config`);
-    throw new Error('Error al buscar la configuracion de envio de proforma de la empresa');
+    throw new Error('Error al buscar la configuración de envio de proforma de la empresa');
   }
 }
 

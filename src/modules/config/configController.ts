@@ -43,7 +43,7 @@ const searchConfig: RequestHandler = async (req, res, next) => {
   try {
     const { configKey } = req.params;
     if (typeof configKey !== 'string') {
-      res.status(400).json({ message: 'La clave de configuracion es requerida' });
+      res.status(400).json({ message: 'La clave de configuración es requerida' });
       return;
     }
     const { companyId } = req.query;
@@ -73,7 +73,7 @@ const updateConfigData: RequestHandler = async (req, res, next) => {
   try {
     const { configKey } = req.params;
     if (typeof configKey !== 'string') {
-      res.status(400).json({ message: 'La clave de configuracion es requerida' });
+      res.status(400).json({ message: 'La clave de configuración es requerida' });
       return;
     }
     const { companyId } = req.query;
@@ -106,7 +106,7 @@ const deleteConfigData: RequestHandler = async (req, res, next) => {
   try {
     const { configKey } = req.params;
     if (typeof configKey !== 'string') {
-      res.status(400).json({ message: 'La clave de configuracion es requerida' });
+      res.status(400).json({ message: 'La clave de configuración es requerida' });
       return;
     }
     const { companyId } = req.query;

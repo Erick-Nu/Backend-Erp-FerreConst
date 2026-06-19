@@ -35,16 +35,16 @@ const EMPTY_RUC_MESSAGE = 'El RUC de la empresa es requerido';
 const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
 const EMPTY_COMPANY_NAME_MESSAGE = 'La razon social de empresa es requerida';
 const EMPTY_COMPANY_EMAIL_MESSAGE = 'El correo de empresa es requerido';
-const EMPTY_COMPANY_CODE_MESSAGE = 'El codigo de empresa es requerido';
+const EMPTY_COMPANY_CODE_MESSAGE = 'El código de empresa es requerido';
 const EMPTY_COMPANY_STATUS_MESSAGE = 'El estado de empresa es requerido';
 const EMPTY_COMPANY_LOGO_MESSAGE = 'El logo de empresa es requerido';
-const INVALID_COMPANY_EMAIL_MESSAGE = 'El correo de empresa debe ser valido';
-const INVALID_COMPANY_CODE_MESSAGE = 'El codigo de empresa debe tener exactamente 4 caracteres alfanumericos';
+const INVALID_COMPANY_EMAIL_MESSAGE = 'El correo de empresa debe ser válido';
+const INVALID_COMPANY_CODE_MESSAGE = 'El código de empresa debe tener exactamente 4 caracteres alfanumericos';
 const INVALID_COMPANY_UPDATE_STATUS_MESSAGE = 'El estado de empresa debe ser activo, inactivo o eliminado';
 const EMPTY_UPDATE_COMPANY_MESSAGE = 'Al menos un campo es requerido para actualizar la empresa';
 const FORBIDDEN_UPDATE_DELETED_COMPANY_MESSAGE = 'La empresa eliminada no puede cambiar de estado';
 const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
-const INVALID_COMPANY_FIND_MESSAGE = 'El codigo de empresa no es invalido';
+const INVALID_COMPANY_FIND_MESSAGE = 'El código de empresa no es inválido';
 const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
 const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
 const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
@@ -52,7 +52,7 @@ const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
 const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
 const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
 const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
-const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
+const INVALID_PAGE_MESSAGE = 'La página debe ser un entero positivo';
 const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
 
 type AccessOptions = {
@@ -168,7 +168,7 @@ async function createCompany(company: CreateCompanyDto, user: LoginUserDto): Pro
 
     const companyByCodeDB = await findCompanyByCode(emcodigo);
     if (companyByCodeDB) {
-      throw new Error('Ya existe una empresa con ese codigo');
+      throw new Error('Ya existe una empresa con ese código');
     }
 
     const companyDB: CreateCompanyDto = {

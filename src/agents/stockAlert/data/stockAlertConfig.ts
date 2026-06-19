@@ -18,7 +18,7 @@ type StockAlertCompanyConfig = {
 
 const FIND_STOCK_ALERT_CONFIGURED_COMPANY_RUC_QUERY = `
   select cfvalor
-  from configuracion
+  from configuración
   where cfclave = 'stockalert.alerta.empresa'
   limit 1
 `;
@@ -36,7 +36,7 @@ async function findStockAlertConfiguredCompanyRucValue(): Promise<string | undef
 
 const FIND_STOCK_ALERT_COMPANY_CONFIG_ROWS_QUERY = `
   select cfclave, cfvalor
-  from configuracion
+  from configuración
   where cfemid = $1 and cfclave like 'stockalert.alerta.%'
 `;
 

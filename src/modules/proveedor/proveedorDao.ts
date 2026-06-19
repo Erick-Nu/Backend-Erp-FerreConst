@@ -118,7 +118,7 @@ const FIND_PROVEEDOR_BY_ID_QUERY = `
     c.ctgriadescripcion,
     m.mrcnombre
   from proveedor p
-  left join categoria c
+  left join categoría c
     on c.ctgriaid = p.provctgriaid
     and c.ctgriaemid = p.provemid
   left join marca m
@@ -241,7 +241,7 @@ function buildFindProveedoresQuery(
       c.ctgriadescripcion,
       m.mrcnombre
     from proveedor p
-    left join categoria c
+    left join categoría c
       on c.ctgriaid = p.provctgriaid
       and c.ctgriaemid = p.provemid
     left join marca m

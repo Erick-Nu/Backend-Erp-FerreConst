@@ -84,7 +84,7 @@ const searchPlaymentMethod: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'El id de metodo de pago es requerido' });
+      res.status(400).json({ message: 'El id de método de pago es requerido' });
       return;
     }
 
@@ -109,7 +109,7 @@ const updatePlaymentMethodData: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'El id de metodo de pago es requerido' });
+      res.status(400).json({ message: 'El id de método de pago es requerido' });
       return;
     }
 
