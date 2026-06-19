@@ -25,29 +25,29 @@ import {
 } from './branchDao.js';
 import { createSequence } from '../sequence/sequenceService.js';
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_BRANCH_NAME_MESSAGE = 'Branch name is required';
-const EMPTY_BRANCH_IDENTIFIER_MESSAGE = 'Branch identifier is required';
-const EMPTY_BRANCH_STATUS_MESSAGE = 'Branch status is required';
-const EMPTY_BRANCH_EMAIL_MESSAGE = 'Branch email is required';
-const EMPTY_BRANCH_ADDRESS_MESSAGE = 'Branch address is required';
-const INVALID_BRANCH_EMAIL_MESSAGE = 'Branch email must be valid';
-const INVALID_BRANCH_UPDATE_STATUS_MESSAGE = 'Branch status must be activo, inactivo or eliminado';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or admin';
-const FORBIDDEN_ROL_USER_JEFE_MESSAGE = 'User is not jefe';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const INVALID_COMPANY_FIND_USER_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const FORBIDDEN_CROSS_COMPANY_BRANCH_CREATION_MESSAGE = 'User cannot create branch for another company';
-const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
-const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
-const EMPTY_BRANCH_ID_MESSAGE = 'Branch id is required';
-const EMPTY_UPDATE_BRANCH_MESSAGE = 'At least one field is required to update branch';
-const FORBIDDEN_UPDATE_DELETED_BRANCH_MESSAGE = 'Deleted branch cannot be updated';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_BRANCH_NAME_MESSAGE = 'El nombre de sucursal es requerido';
+const EMPTY_BRANCH_IDENTIFIER_MESSAGE = 'El identificador de sucursal es requerido';
+const EMPTY_BRANCH_STATUS_MESSAGE = 'El estado de sucursal es requerido';
+const EMPTY_BRANCH_EMAIL_MESSAGE = 'El correo de sucursal es requerido';
+const EMPTY_BRANCH_ADDRESS_MESSAGE = 'La direccion de sucursal es requerida';
+const INVALID_BRANCH_EMAIL_MESSAGE = 'El correo de sucursal debe ser valido';
+const INVALID_BRANCH_UPDATE_STATUS_MESSAGE = 'El estado de sucursal debe ser activo, inactivo o eliminado';
+const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const FORBIDDEN_ROL_USER_JEFE_MESSAGE = 'El usuario no es jefe';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const INVALID_COMPANY_FIND_USER_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const FORBIDDEN_CROSS_COMPANY_BRANCH_CREATION_MESSAGE = 'El usuario no puede crear sucursales para otra empresa';
+const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamano de pagina debe ser un entero positivo';
+const EMPTY_BRANCH_ID_MESSAGE = 'El id de sucursal es requerido';
+const EMPTY_UPDATE_BRANCH_MESSAGE = 'Al menos un campo es requerido para actualizar la sucursal';
+const FORBIDDEN_UPDATE_DELETED_BRANCH_MESSAGE = 'La sucursal eliminada no puede ser actualizada';
 
 type AccessOptions = {
   requireParentCompany: boolean;
@@ -170,7 +170,7 @@ async function createBranch(branch: CreateBranchDto, user: LoginUserDto): Promis
     const identifierDB = await findBranchByIdentifier(branchIdentifier);
     
     if (identifierDB) {
-      throw new Error('Branch already exists with that identifier');
+      throw new Error('Ya existe una sucursal con ese identificador');
     };
 
     const branchDB: CreateBranchDto = {
@@ -254,7 +254,7 @@ async function readBranch(branch: FindBranchDto, user: LoginUserDto): Promise<Br
       suid,
     });
     if (!branchDB) {
-      throw new Error('Branch not found');
+      throw new Error('Sucursal no encontrada');
     }
 
     return branchDB;
@@ -320,7 +320,7 @@ async function updateBranch(branch: UpdateBranchDto, user: LoginUserDto): Promis
     });
 
     if (!branchDB) {
-      throw new Error('Branch not found');
+      throw new Error('Sucursal no encontrada');
     }
 
     if (branchDB.suestado === 'eliminado') {
@@ -334,7 +334,7 @@ async function updateBranch(branch: UpdateBranchDto, user: LoginUserDto): Promis
       });
 
       if (identifierDB && identifierDB !== suid) {
-        throw new Error('Branch already exists with that identifier');
+        throw new Error('Ya existe una sucursal con ese identificador');
       }
     }
 
