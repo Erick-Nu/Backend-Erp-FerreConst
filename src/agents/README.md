@@ -8,10 +8,11 @@ Cada agente vive en su propia carpeta y tiene su propio punto de arranque.
 
 Estructura base por agente:
 
-- `src/agents/<agent-name>/main.ts`
+- `src/agents/<agent-name>/task/<agent-name>Task.ts`
 
 Archivos opcionales por agente (si el agente lo necesita):
 
+- `task/`
 - `types.ts`
 - `service.ts`
 - `dao.ts`

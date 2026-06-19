@@ -59,8 +59,17 @@ El flujo tipico de una peticion es:
 ```text
 src/
   agents/
+    README.md
     sendProforma/
+      data/
+      email/
+      task/
+        sendProformaTask.ts
+      whatsapp/
     stockAlert/
+      data/
+      task/
+        stockAlertTask.ts
   config/
   middlewares/
   modules/
@@ -129,6 +138,7 @@ ecosystem.config.cjs
 
 - `sendProforma` consulta proformas pendientes, arma el correo HTML y adjunta el PDF
 - `stockAlert` revisa stock bajo y alimenta la tabla de alertas
+- Cada agente se ejecuta desde su `task/*Task.ts` y mantiene su propio loop, polling y manejo de senales
 
 ## Requisitos previos
 
