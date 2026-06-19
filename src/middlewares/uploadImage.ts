@@ -62,15 +62,15 @@ function validateImageSize(
   maxSizeBytes: number = DEFAULT_MAX_IMAGE_SIZE_BYTES,
 ): true {
   if (!uploadedImage) {
-    throw new Error('Image is required');
+    throw new Error('La imagen es requerida');
   }
 
   if (maxSizeBytes <= 0) {
-    throw new Error('Invalid max image size');
+    throw new Error('Tamano maximo de imagen invalido');
   }
 
   if (uploadedImage.size <= 0 || uploadedImage.size > maxSizeBytes) {
-    throw new Error('Image size exceeds the allowed limit');
+    throw new Error('El tamano de la imagen excede el limite permitido');
   }
 
   return true;
@@ -78,12 +78,12 @@ function validateImageSize(
 
 function validateImageType(uploadedImage: image | null): true {
   if (!uploadedImage) {
-    throw new Error('Image is required');
+    throw new Error('La imagen es requerida');
   }
 
   const extension = extname(uploadedImage.originalName).toLowerCase();
   if (!ALLOWED_IMAGE_EXTENSIONS.includes(extension as '.png' | '.jpg')) {
-    throw new Error('Only PNG and JPG images are allowed');
+    throw new Error('Solo se permiten imagenes PNG y JPG');
   }
 
   return true;
@@ -98,7 +98,7 @@ async function saveImage(image: image, destinationPath: string): Promise<string>
     await writeFile(filePath, image.buffer);
     return publicPath;
   } catch {
-    throw new Error('Failed to save image');
+    throw new Error('Error al guardar la imagen');
   }
 }
 
