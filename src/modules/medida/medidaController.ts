@@ -42,17 +42,17 @@ const searchMedidas: RequestHandler = async (req, res, next) => {
     const statusQuery = req.query.status;
 
     if (Array.isArray(searchQuery)) {
-      res.status(400).json({ message: 'Search must be a string' });
+      res.status(400).json({ message: 'La busqueda debe ser un texto' });
       return;
     }
 
     if (Array.isArray(statusQuery)) {
-      res.status(400).json({ message: 'Status must be a string' });
+      res.status(400).json({ message: 'El estado debe ser un texto' });
       return;
     }
 
     if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
-      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
 
@@ -85,7 +85,7 @@ const searchMedida: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Medida id is required' });
+      res.status(400).json({ message: 'El id de medida es requerido' });
       return;
     }
 
@@ -96,7 +96,7 @@ const searchMedida: RequestHandler = async (req, res, next) => {
 
     const medidaDB = await readMedida(medida, user);
     if (!medidaDB) {
-      res.status(404).json({ message: 'Medida not found' });
+      res.status(404).json({ message: 'Medida no encontrada' });
       return;
     }
 
@@ -110,7 +110,7 @@ const updateMedidaData: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Medida id is required' });
+      res.status(400).json({ message: 'El id de medida es requerido' });
       return;
     }
 
@@ -135,7 +135,7 @@ const updateMedidaData: RequestHandler = async (req, res, next) => {
     const user: LoginUserDto = req.auth!;
     const updatedMedida = await updateMedida(medida, user);
     if (!updatedMedida) {
-      res.status(404).json({ message: 'Medida not found' });
+      res.status(404).json({ message: 'Medida no encontrada' });
       return;
     }
 
