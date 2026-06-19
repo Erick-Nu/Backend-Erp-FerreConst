@@ -2,8 +2,8 @@ import bcrypt from 'bcrypt';
 
 import { env } from '../config/env.js';
 
-const EMPTY_PASSWORD_MESSAGE = 'La contrasena es requerida';
-const EMPTY_HASH_MESSAGE = 'El hash de contrasena es requerido';
+const EMPTY_PASSWORD_MESSAGE = 'La contraseña es requerida';
+const EMPTY_HASH_MESSAGE = 'El hash de contraseña es requerido';
 
 function validatePassword(password: string): void {
   if (password.length > 0) {

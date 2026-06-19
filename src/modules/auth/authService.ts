@@ -26,7 +26,7 @@ import type { AuthLoginControlRow, AuthLoginControlScopeDao } from './authDao.js
 
 const EMPTY_RUC_MESSAGE = 'El RUC de la empresa es requerido';
 const EMPTY_NICKNAME_MESSAGE = 'El apodo es requerido';
-const EMPTY_PASSWORD_MESSAGE = 'La contrasena es requerida';
+const EMPTY_PASSWORD_MESSAGE = 'La contraseña es requerida';
 const EMPTY_REFRESH_TOKEN_MESSAGE = 'El token de refresco es requerido';
 const INACTIVE_USER_MESSAGE = 'El usuario esta inactivo';
 const INACTIVE_COMPANY_MESSAGE = 'La empresa esta inactiva';

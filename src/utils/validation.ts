@@ -10,11 +10,11 @@ const BRANCH_IDENTIFIER_PATTERN = /^\d{3}$/;
 
 const EMPTY_TEXT_MESSAGE = 'El texto es requerido';
 const EMPTY_NUMBER_MESSAGE = 'El numero es requerido';
-const EMPTY_PASSWORD_MESSAGE = 'La contrasena es requerida';
+const EMPTY_PASSWORD_MESSAGE = 'La contraseña es requerida';
 const INVALID_EMAIL_MESSAGE = 'El correo debe ser valido';
 const INVALID_NAME_MESSAGE = 'El nombre solo debe contener letras y espacios';
 const INVALID_NUMBER_MESSAGE = 'El valor debe ser un numero valido';
-const INVALID_PASSWORD_MESSAGE = 'La contrasena debe tener al menos 8 caracteres';
+const INVALID_PASSWORD_MESSAGE = 'La contraseña debe tener al menos 8 caracteres';
 const INVALID_ROLE_MESSAGE = 'El rol debe ser administrador, jefe o empleado';
 const INVALID_STATUS_MESSAGE = 'El estado debe ser activo o inactivo';
 const INVALID_RUC_MESSAGE = 'El RUC debe ser valido';
