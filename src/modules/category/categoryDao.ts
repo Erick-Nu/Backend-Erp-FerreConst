@@ -21,6 +21,8 @@ type FindCategoryByNameDao = {
 type FindCategoriesParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type UpdateColumnCategoryDao = {
@@ -149,36 +151,89 @@ async function findCategoryByName(category: FindCategoryByNameDao): Promise<Cate
   }
 }
 
-const FIND_CATEGORIES_QUERY = `
-  select ctgriaid, ctgriaemid, ctgnombre, ctgriadescripcion, ctgriafchregistro, ctgriaestado
-  from categoria
-  where ctgriaemid = $1
-  order by ctgriafchregistro desc
-  limit $2
-  offset $3
-`;
+type CategoryQueryValue = string | number;
 
-const COUNT_CATEGORIES_QUERY = `
-  select count(*)::int as total
-  from categoria
-  where ctgriaemid = $1
-`;
+function buildFindCategoriesWhereClause(
+  companyId: string,
+  params: Pick<FindCategoriesParamsDao, 'search' | 'status'>,
+): { clause: string; values: CategoryQueryValue[] } {
+  const conditions = ['ctgriaemid = $1'];
+  const values: CategoryQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`ctgriaestado = $${values.length}`);
+  } else {
+    conditions.push(`ctgriaestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(ctgnombre)) like $${searchParamIndex}
+      or lower(trim(ctgriadescripcion)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindCategoriesQuery(
+  params: FindCategoriesParamsDao,
+  companyId: string,
+): { query: string; values: CategoryQueryValue[] } {
+  const where = buildFindCategoriesWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select ctgriaid, ctgriaemid, ctgnombre, ctgriadescripcion, ctgriafchregistro, ctgriaestado
+    from categoria
+    where ${where.clause}
+    order by ctgriafchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountCategoriesQuery(
+  params: FindCategoriesParamsDao,
+  companyId: string,
+): { query: string; values: CategoryQueryValue[] } {
+  const where = buildFindCategoriesWhereClause(companyId, params);
+  const query = `
+    select count(*)::int as total
+    from categoria
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
 
 async function findCategories(
   params: FindCategoriesParamsDao,
   companyId: string,
 ): Promise<FindCategoriesResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<CategoryRowDao[]>(FIND_CATEGORIES_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findCategoriesQuery = buildFindCategoriesQuery(params, companyId);
+    const countCategoriesQuery = buildCountCategoriesQuery(params, companyId);
+
+    const [result, categoriesTotalDB] = await Promise.all([
+      sql.unsafe<CategoryRowDao[]>(findCategoriesQuery.query, findCategoriesQuery.values),
+      sql.unsafe<{ total: number }[]>(countCategoriesQuery.query, countCategoriesQuery.values),
     ]);
 
-    const categoriesTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_CATEGORIES_QUERY, [companyId]);
     const totalItems = categoriesTotalDB[0];
 
     if (!totalItems) {
@@ -195,7 +250,7 @@ async function findCategories(
 
     return categoriesDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding categories');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding categories');
     throw new Error('Error finding categories');
   }
 }

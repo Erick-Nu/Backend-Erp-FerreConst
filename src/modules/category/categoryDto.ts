@@ -20,6 +20,8 @@ type UpdateCategoryDto = {
 type FindCategoriesParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type CategoryResponseDto = {
