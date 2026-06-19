@@ -36,6 +36,8 @@ type UpdateUserPasswordDto = {
 type FindUsersParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type FindUsersResponseDto = {

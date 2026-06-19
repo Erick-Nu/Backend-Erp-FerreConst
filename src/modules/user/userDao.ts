@@ -27,6 +27,8 @@ type UserRowDao = {
 type FindUsersParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type FindUsersResponseDao = {
@@ -141,6 +143,75 @@ const FIND_USER_BY_ID_QUERY = `
   where usid = $1 and usemid = $2
 `;
 
+type UserQueryValue = string | number;
+
+function buildFindUsersWhereClause(
+  companyId: string,
+  params: Pick<FindUsersParamsDao, 'search' | 'status'>,
+): { clause: string; values: UserQueryValue[] } {
+  const conditions = ['usemid = $1'];
+  const values: UserQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`usestado = $${values.length}`);
+  } else {
+    conditions.push(`usestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(usnombre)) like $${searchParamIndex}
+      or lower(trim(usapodo)) like $${searchParamIndex}
+      or lower(trim(uscorreo)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindUsersQuery(
+  params: FindUsersParamsDao,
+  companyId: string,
+): { query: string; values: UserQueryValue[] } {
+  const where = buildFindUsersWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select usid, usemid, usnombre, usapodo, uscorreo, usimagen, usrol, usfchregistro, usestado
+    from usuario
+    where ${where.clause}
+    order by usfchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountUsersQuery(
+  params: FindUsersParamsDao,
+  companyId: string,
+): { query: string; values: UserQueryValue[] } {
+  const where = buildFindUsersWhereClause(companyId, params);
+  const query = `
+    select count(*)::int as total
+    from usuario
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
+
 async function findUserById(user: FindUserByIdDao): Promise<UserRowDao | null> {
   try {
     const result = await sql.unsafe<UserRowDao[]>(FIND_USER_BY_ID_QUERY, [user.usid, user.usemid]);
@@ -155,35 +226,20 @@ async function findUserById(user: FindUserByIdDao): Promise<UserRowDao | null> {
   }
 }
 
-const FIND_USERS_QUERY = `
-  select usid, usemid, usnombre, usapodo, uscorreo, usimagen, usrol, usfchregistro, usestado
-  from usuario
-  where usemid = $1
-  order by usfchregistro desc
-  limit $2
-  offset $3
-`;
-
-const COUNT_USERS_QUERY = `
-  select count(*)::int as total
-  from usuario
-  where usemid = $1
-`;
-
 async function findUsers(
   params: FindUsersParamsDao,
   companyId: string,
 ): Promise<FindUsersResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
   try {
-    const result = await sql.unsafe<UserRowDao[]>(FIND_USERS_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findUsersQuery = buildFindUsersQuery(params, companyId);
+    const countUsersQuery = buildCountUsersQuery(params, companyId);
+
+    const [result, usersTotalDB] = await Promise.all([
+      sql.unsafe<UserRowDao[]>(findUsersQuery.query, findUsersQuery.values),
+      sql.unsafe<{ total: number }[]>(countUsersQuery.query, countUsersQuery.values),
     ]);
 
-    const usersTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_USERS_QUERY, [companyId]);
     const totalItems = usersTotalDB[0];
 
     if (!totalItems) {
@@ -200,7 +256,7 @@ async function findUsers(
 
     return usersDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding users');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding users');
     throw new Error('Error finding users');
   }
 }
