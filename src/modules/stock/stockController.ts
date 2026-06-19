@@ -15,6 +15,7 @@ import {
   readStocksByCompany,
   updateStock,
 } from './stockService.js';
+import { isValidStatus } from '../../utils/validation.js';
 
 type UpdateStockRequestBody = Omit<UpdateStockDto, 'stckid'>;
 
@@ -41,9 +42,26 @@ const searchStocks: RequestHandler = async (req, res, next) => {
   try {
     const pageQuery = req.query.page;
     const pageSizeQuery = req.query.pageSize;
+    const searchQuery = req.query.search;
+    const statusQuery = req.query.status;
     const { stcksuid, suidentificador } = req.query;
     const user: LoginUserDto = req.auth!;
     let resolvedBranchId: string | null = null;
+
+    if (Array.isArray(searchQuery)) {
+      res.status(400).json({ message: 'Search must be a string' });
+      return;
+    }
+
+    if (Array.isArray(statusQuery)) {
+      res.status(400).json({ message: 'Status must be a string' });
+      return;
+    }
+
+    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      return;
+    }
 
     if (typeof stcksuid === 'string' && stcksuid.trim().length > 0) {
       resolvedBranchId = stcksuid;
@@ -74,6 +92,15 @@ const searchStocks: RequestHandler = async (req, res, next) => {
       page,
       pageSize,
     };
+
+    if (typeof searchQuery === 'string') {
+      params.search = searchQuery;
+    }
+
+    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+      params.status = statusQuery;
+    }
+
     const stocksDB = await readStocks(params, user);
 
     res.status(200).json(stocksDB);
@@ -86,6 +113,24 @@ const searchStocksByCompany: RequestHandler = async (req, res, next) => {
   try {
     const pageQuery = req.query.page;
     const pageSizeQuery = req.query.pageSize;
+    const searchQuery = req.query.search;
+    const statusQuery = req.query.status;
+
+    if (Array.isArray(searchQuery)) {
+      res.status(400).json({ message: 'Search must be a string' });
+      return;
+    }
+
+    if (Array.isArray(statusQuery)) {
+      res.status(400).json({ message: 'Status must be a string' });
+      return;
+    }
+
+    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      return;
+    }
+
     const page = Number(pageQuery);
     const pageSize = Number(pageSizeQuery);
     const user: LoginUserDto = req.auth!;
@@ -94,6 +139,15 @@ const searchStocksByCompany: RequestHandler = async (req, res, next) => {
       page,
       pageSize,
     };
+
+    if (typeof searchQuery === 'string') {
+      params.search = searchQuery;
+    }
+
+    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+      params.status = statusQuery;
+    }
+
     const stocksDB = await readStocksByCompany(params, user);
 
     res.status(200).json(stocksDB);

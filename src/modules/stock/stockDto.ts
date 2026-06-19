@@ -27,11 +27,15 @@ type FindStocksParamsDto = {
   stcksuid: string;
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type FindStocksByCompanyParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type StockSucursalResponseDto = {

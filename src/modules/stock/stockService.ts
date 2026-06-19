@@ -1,4 +1,10 @@
 import type { LoginUserDto } from '../auth/authDto.js';
+import {
+  findLowStockProductByStock,
+  hideAlertByStock,
+  upsertAlert,
+} from '../../agents/stockAlert/data/stockAlertDao.js';
+import { findStockAlertCompanyAlertConfig } from '../../agents/stockAlert/data/stockAlertConfig.js';
 import { findBranchById } from '../branch/branchDao.js';
 import { findCompanyById } from '../company/companyDao.js';
 import { findProductById } from '../product/productDao.js';
@@ -54,6 +60,46 @@ type AccessOptions = {
   targetCompanyId?: string;
 };
 
+async function syncStockAlertForStock(
+  emid: string,
+  suid: string,
+  productId: string,
+): Promise<void> {
+  try {
+    const companyConfig = await findStockAlertCompanyAlertConfig(emid);
+
+    const lowStockProduct = await findLowStockProductByStock(emid, suid, productId);
+
+    if (!lowStockProduct) {
+      await hideAlertByStock(emid, suid, productId);
+      return;
+    }
+
+    if (!companyConfig.active) {
+      await hideAlertByStock(emid, suid, productId);
+      return;
+    }
+
+    const mensaje = `Stock bajo en ${lowStockProduct.sucursalnombre}: ${lowStockProduct.prdtonombre} (${lowStockProduct.prdtocodigo}) - Actual: ${lowStockProduct.stckcantidad}, Mínimo: ${lowStockProduct.prdtostockminimo}`;
+
+    await upsertAlert({
+      alemid: lowStockProduct.stckemid,
+      alsuid: lowStockProduct.stcksuid,
+      alprdtoid: lowStockProduct.stckprdtoid,
+      altipo: 'stock_bajo',
+      almensaje: mensaje,
+      alcantidadactual: lowStockProduct.stckcantidad,
+      alstockminimo: lowStockProduct.prdtostockminimo,
+      alstockmaximo: lowStockProduct.prdtostockmaximo,
+    });
+  } catch (error) {
+    logger.error(
+      { err: error, companyId: emid, branchId: suid, productId },
+      'Error syncing stock alert after stock change',
+    );
+  }
+}
+
 function mapStockRowToResponse(stock: StockRowDao): StockResponseDto {
   return {
     stckid: stock.stckid,
@@ -83,7 +129,7 @@ function mapFindStocksResponse(stocksDB: FindStocksResponseDao): FindStocksRespo
 }
 
 function validateFindStocksParams(params: FindStocksParamsDto): FindStocksParamsDto {
-  const { stcksuid, page, pageSize } = params;
+  const { stcksuid, page, pageSize, search, status } = params;
   const validatedBranchId = validateRequiredString(stcksuid, EMPTY_STOCK_BRANCH_ID_MESSAGE);
 
   if (!Number.isInteger(page) || page < 1) {
@@ -94,17 +140,31 @@ function validateFindStocksParams(params: FindStocksParamsDto): FindStocksParams
     throw new Error(INVALID_PAGE_SIZE_MESSAGE);
   }
 
-  return {
+  const normalizedSearch = typeof search === 'string'
+    ? search.trim()
+    : undefined;
+
+  const validatedParams: FindStocksParamsDto = {
     stcksuid: validatedBranchId,
     page,
     pageSize,
   };
+
+  if (normalizedSearch && normalizedSearch.length > 0) {
+    validatedParams.search = normalizedSearch;
+  }
+
+  if (status) {
+    validatedParams.status = status;
+  }
+
+  return validatedParams;
 }
 
 function validateFindStocksByCompanyParams(
   params: FindStocksByCompanyParamsDto,
 ): FindStocksByCompanyParamsDto {
-  const { page, pageSize } = params;
+  const { page, pageSize, search, status } = params;
 
   if (!Number.isInteger(page) || page < 1) {
     throw new Error(INVALID_PAGE_MESSAGE);
@@ -114,10 +174,24 @@ function validateFindStocksByCompanyParams(
     throw new Error(INVALID_PAGE_SIZE_MESSAGE);
   }
 
-  return {
+  const normalizedSearch = typeof search === 'string'
+    ? search.trim()
+    : undefined;
+
+  const validatedParams: FindStocksByCompanyParamsDto = {
     page,
     pageSize,
   };
+
+  if (normalizedSearch && normalizedSearch.length > 0) {
+    validatedParams.search = normalizedSearch;
+  }
+
+  if (status) {
+    validatedParams.status = status;
+  }
+
+  return validatedParams;
 }
 
 async function validateCompanyAndUserAccess(user: LoginUserDto, options: AccessOptions): Promise<void> {
@@ -252,6 +326,8 @@ async function createStock(stock: CreateStockDto, user: LoginUserDto): Promise<S
     if (!stockDB) {
       throw new Error('Stock was not created');
     }
+
+    await syncStockAlertForStock(stckemid, stcksuid, stckprdtoid);
 
     return mapStockRowToResponse(stockDB);
   } catch (error) {
@@ -452,6 +528,8 @@ async function updateStock(stock: UpdateStockDto, user: LoginUserDto): Promise<S
     if (!stockUpdatedWithRelationsDB) {
       return null;
     }
+
+    await syncStockAlertForStock(user.usemid, stcksuid, stockDB.stckprdtoid);
 
     return mapStockRowToResponse(stockUpdatedWithRelationsDB);
   } catch (error) {

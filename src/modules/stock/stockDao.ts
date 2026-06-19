@@ -29,6 +29,8 @@ type FindStockByProductIdDao = {
 type FindStocksParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type UpdateColumnStockDao = {
@@ -58,6 +60,8 @@ type FindStocksResponseDao = {
   totalItems: number;
   totalPages: number;
 };
+
+type StockQueryValue = string | number;
 
 const SAVE_STOCK_QUERY = `
   insert into stock (stckemid, stcksuid, stckprdtoid, stckcantidad)
@@ -270,23 +274,162 @@ const COUNT_STOCKS_BY_COMPANY_QUERY = `
   where stckemid = $1
 `;
 
+function buildStocksBaseWhereClause(
+  companyId: string,
+  params: Pick<FindStocksParamsDao, 'search' | 'status'>,
+  prefix: string = 'st',
+): { clause: string; values: StockQueryValue[] } {
+  const conditions = [`${prefix}.stckemid = $1`];
+  const values: StockQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`${prefix}.stckestado = $${values.length}`);
+  } else {
+    conditions.push(`${prefix}.stckestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(p.prdtocodigo)) like $${searchParamIndex}
+      or lower(trim(p.prdtonombre)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindStocksWhereClause(
+  companyId: string,
+  branchId: string,
+  params: Pick<FindStocksParamsDao, 'search' | 'status'>,
+): { clause: string; values: StockQueryValue[] } {
+  const base = buildStocksBaseWhereClause(companyId, params);
+  const values = [...base.values, branchId];
+  const branchParamIndex = values.length;
+  const conditions = base.clause.split(' and ');
+  conditions.push(`st.stcksuid = $${branchParamIndex}`);
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindStocksQuery(
+  params: FindStocksParamsDao,
+  companyId: string,
+  branchId: string,
+): { query: string; values: StockQueryValue[] } {
+  const where = buildFindStocksWhereClause(companyId, branchId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select
+      st.stckid, st.stckemid, st.stcksuid, st.stckprdtoid,
+      st.stckcantidad, st.stckfchregistro, st.stckfchactualizacion, st.stckestado,
+      s.sunombre, s.suidentificador,
+      p.prdtocodigo, p.prdtonombre
+    from stock st
+    left join sucursal s on s.suid = st.stcksuid and s.suemid = st.stckemid
+    left join producto p on p.prdtoid = st.stckprdtoid and p.prdtoemid = st.stckemid
+    where ${where.clause}
+    order by st.stckfchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountStocksQuery(
+  params: FindStocksParamsDao,
+  companyId: string,
+  branchId: string,
+): { query: string; values: StockQueryValue[] } {
+  const where = buildFindStocksWhereClause(companyId, branchId, params);
+
+  const query = `
+    select count(*)::int as total
+    from stock st
+    left join sucursal s on s.suid = st.stcksuid and s.suemid = st.stckemid
+    left join producto p on p.prdtoid = st.stckprdtoid and p.prdtoemid = st.stckemid
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
+
+function buildFindStocksByCompanyQuery(
+  params: FindStocksParamsDao,
+  companyId: string,
+): { query: string; values: StockQueryValue[] } {
+  const where = buildStocksBaseWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select
+      st.stckid, st.stckemid, st.stcksuid, st.stckprdtoid,
+      st.stckcantidad, st.stckfchregistro, st.stckfchactualizacion, st.stckestado,
+      s.sunombre, s.suidentificador,
+      p.prdtocodigo, p.prdtonombre
+    from stock st
+    left join sucursal s on s.suid = st.stcksuid and s.suemid = st.stckemid
+    left join producto p on p.prdtoid = st.stckprdtoid and p.prdtoemid = st.stckemid
+    where ${where.clause}
+    order by st.stckfchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountStocksByCompanyQuery(
+  params: FindStocksParamsDao,
+  companyId: string,
+): { query: string; values: StockQueryValue[] } {
+  const where = buildStocksBaseWhereClause(companyId, params);
+
+  const query = `
+    select count(*)::int as total
+    from stock st
+    left join sucursal s on s.suid = st.stcksuid and s.suemid = st.stckemid
+    left join producto p on p.prdtoid = st.stckprdtoid and p.prdtoemid = st.stckemid
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
+
 async function findStocks(
   params: FindStocksParamsDao,
   companyId: string,
   branchId: string,
 ): Promise<FindStocksResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<StockRowDao[]>(FIND_STOCKS_QUERY, [
-      companyId,
-      branchId,
-      pageSize,
-      offset,
+    const findStocksQuery = buildFindStocksQuery(params, companyId, branchId);
+    const countStocksQuery = buildCountStocksQuery(params, companyId, branchId);
+
+    const [result, stocksTotalDB] = await Promise.all([
+      sql.unsafe<StockRowDao[]>(findStocksQuery.query, findStocksQuery.values),
+      sql.unsafe<{ total: number }[]>(countStocksQuery.query, countStocksQuery.values),
     ]);
 
-    const stocksTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_STOCKS_QUERY, [companyId, branchId]);
     const totalItems = stocksTotalDB[0];
 
     if (!totalItems) {
@@ -303,7 +446,7 @@ async function findStocks(
 
     return stocksDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId, branchId }, 'Error finding stocks');
+    logger.error({ err: error, page, pageSize, search, companyId, branchId }, 'Error finding stocks');
     throw new Error('Error finding stocks');
   }
 }
@@ -312,17 +455,17 @@ async function findStocksByCompany(
   params: FindStocksParamsDao,
   companyId: string,
 ): Promise<FindStocksResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<StockRowDao[]>(FIND_STOCKS_BY_COMPANY_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findStocksQuery = buildFindStocksByCompanyQuery(params, companyId);
+    const countStocksQuery = buildCountStocksByCompanyQuery(params, companyId);
+
+    const [result, stocksTotalDB] = await Promise.all([
+      sql.unsafe<StockRowDao[]>(findStocksQuery.query, findStocksQuery.values),
+      sql.unsafe<{ total: number }[]>(countStocksQuery.query, countStocksQuery.values),
     ]);
 
-    const stocksTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_STOCKS_BY_COMPANY_QUERY, [companyId]);
     const totalItems = stocksTotalDB[0];
 
     if (!totalItems) {
@@ -339,7 +482,7 @@ async function findStocksByCompany(
 
     return stocksDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding stocks by company');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding stocks by company');
     throw new Error('Error finding stocks by company');
   }
 }
