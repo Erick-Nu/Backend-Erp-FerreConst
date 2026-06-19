@@ -19,6 +19,8 @@ type UpdateCheckoutDto = {
 type FindCheckoutsParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type CheckoutResponseDto = {

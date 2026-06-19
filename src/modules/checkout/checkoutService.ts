@@ -64,7 +64,7 @@ function createErrorWithStatusCode(message: string, statusCode: number): ErrorWi
 }
 
 function validateFindCheckoutsParams(params: FindCheckoutsParamsDto): FindCheckoutsParamsDto {
-  const { page, pageSize } = params;
+  const { page, pageSize, search, status } = params;
 
   if (!Number.isInteger(page) || page < 1) {
     throw new Error(INVALID_PAGE_MESSAGE);
@@ -74,10 +74,24 @@ function validateFindCheckoutsParams(params: FindCheckoutsParamsDto): FindChecko
     throw new Error(INVALID_PAGE_SIZE_MESSAGE);
   }
 
-  return {
+  const normalizedSearch = typeof search === 'string'
+    ? search.trim()
+    : undefined;
+
+  const validatedParams: FindCheckoutsParamsDto = {
     page,
     pageSize,
   };
+
+  if (normalizedSearch && normalizedSearch.length > 0) {
+    validatedParams.search = normalizedSearch;
+  }
+
+  if (status) {
+    validatedParams.status = status;
+  }
+
+  return validatedParams;
 }
 
 type CheckoutWithBranchShape = CheckoutResponseDto & {

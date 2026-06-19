@@ -31,6 +31,8 @@ type FindCheckoutByRowIdDao = {
 type FindCheckoutsParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type CheckoutWithBranchRowDao = CheckoutRowDao & {
@@ -47,6 +49,8 @@ type FindCheckoutsResponseDao = {
   totalItems: number;
   totalPages: number;
 };
+
+type CheckoutQueryValue = string | number;
 
 const SAVE_CHECKOUT_QUERY = `
   insert into caja (cjemid, cjsuid, cjidentificador)
@@ -194,21 +198,100 @@ const COUNT_CHECKOUTS_QUERY = `
   where cjemid = $1
 `;
 
+function buildFindCheckoutsWhereClause(
+  companyId: string,
+  params: Pick<FindCheckoutsParamsDao, 'search' | 'status'>,
+): { clause: string; values: CheckoutQueryValue[] } {
+  const conditions = ['c.cjemid = $1'];
+  const values: CheckoutQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`c.cjestado = $${values.length}`);
+  } else {
+    conditions.push(`c.cjestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(c.cjidentificador)) like $${searchParamIndex}
+      or lower(trim(s.sunombre)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindCheckoutsQuery(
+  params: FindCheckoutsParamsDao,
+  companyId: string,
+): { query: string; values: CheckoutQueryValue[] } {
+  const where = buildFindCheckoutsWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select
+      c.cjid,
+      c.cjemid,
+      c.cjsuid,
+      c.cjidentificador,
+      c.cjfchregistro,
+      c.cjestado,
+      s.suid,
+      s.sunombre,
+      s.suidentificador,
+      s.suestado
+    from caja c
+    inner join sucursal s on s.suid = c.cjsuid and s.suemid = c.cjemid
+    where ${where.clause}
+    order by c.cjfchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountCheckoutsQuery(
+  params: FindCheckoutsParamsDao,
+  companyId: string,
+): { query: string; values: CheckoutQueryValue[] } {
+  const where = buildFindCheckoutsWhereClause(companyId, params);
+
+  const query = `
+    select count(*)::int as total
+    from caja c
+    inner join sucursal s on s.suid = c.cjsuid and s.suemid = c.cjemid
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
+
 async function findCheckouts(
   params: FindCheckoutsParamsDao,
   companyId: string,
 ): Promise<FindCheckoutsResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<CheckoutWithBranchRowDao[]>(FIND_CHECKOUTS_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findCheckoutsQuery = buildFindCheckoutsQuery(params, companyId);
+    const countCheckoutsQuery = buildCountCheckoutsQuery(params, companyId);
+
+    const [result, checkoutsTotalDB] = await Promise.all([
+      sql.unsafe<CheckoutWithBranchRowDao[]>(findCheckoutsQuery.query, findCheckoutsQuery.values),
+      sql.unsafe<{ total: number }[]>(countCheckoutsQuery.query, countCheckoutsQuery.values),
     ]);
 
-    const checkoutsTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_CHECKOUTS_QUERY, [companyId]);
     const totalItems = checkoutsTotalDB[0];
 
     if (!totalItems) {
@@ -225,7 +308,7 @@ async function findCheckouts(
 
     return checkoutsDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding checkouts');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding checkouts');
     throw new Error('Error finding checkouts');
   }
 }

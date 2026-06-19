@@ -7,6 +7,7 @@ import type {
   UpdateCheckoutDto,
 } from './checkoutDto.js';
 import { createCheckout, readCheckout, readCheckouts, updateCheckout } from './checkoutService.js';
+import { isValidStatus } from '../../utils/validation.js';
 
 type UpdateCheckoutRequestBody = Omit<UpdateCheckoutDto, 'cjid'>;
 
@@ -65,6 +66,23 @@ const searchCheckouts: RequestHandler = async (req, res, next) => {
   try {
     const pageQuery = req.query.page;
     const pageSizeQuery = req.query.pageSize;
+    const searchQuery = req.query.search;
+    const statusQuery = req.query.status;
+
+    if (Array.isArray(searchQuery)) {
+      res.status(400).json({ message: 'Search must be a string' });
+      return;
+    }
+
+    if (Array.isArray(statusQuery)) {
+      res.status(400).json({ message: 'Status must be a string' });
+      return;
+    }
+
+    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      return;
+    }
 
     const page = Number(pageQuery);
     const pageSize = Number(pageSizeQuery);
@@ -73,6 +91,15 @@ const searchCheckouts: RequestHandler = async (req, res, next) => {
       page,
       pageSize,
     };
+
+    if (typeof searchQuery === 'string') {
+      params.search = searchQuery;
+    }
+
+    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+      params.status = statusQuery;
+    }
+
     const user: LoginUserDto = req.auth!;
     const checkoutsDB = await readCheckouts(params, user);
 
