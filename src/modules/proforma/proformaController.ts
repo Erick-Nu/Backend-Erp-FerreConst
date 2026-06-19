@@ -15,7 +15,9 @@ import {
   readProformaPdfDocument,
   readProformas,
   replaceProforma,
+  sendProforma,
 } from './proformaService.js';
+import { isValidProformaStatus } from '../../utils/validation.js';
 
 type ReplaceProformaRequestBody = Omit<ReplaceProformaDto, 'prfmaid'>;
 
@@ -59,6 +61,23 @@ const searchProformas: RequestHandler = async (req, res, next) => {
   try {
     const pageQuery = req.query.page;
     const pageSizeQuery = req.query.pageSize;
+    const searchQuery = req.query.search;
+    const statusQuery = req.query.status;
+
+    if (Array.isArray(searchQuery)) {
+      res.status(400).json({ message: 'Search must be a string' });
+      return;
+    }
+
+    if (Array.isArray(statusQuery)) {
+      res.status(400).json({ message: 'Status must be a string' });
+      return;
+    }
+
+    if (typeof statusQuery === 'string' && !isValidProformaStatus(statusQuery)) {
+      res.status(400).json({ message: 'Status must be emitida, pagada or anulada' });
+      return;
+    }
 
     const page = Number(pageQuery);
     const pageSize = Number(pageSizeQuery);

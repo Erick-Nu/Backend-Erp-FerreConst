@@ -271,10 +271,24 @@ function validateFindProformasParams(params: FindProformasParamsDto): FindProfor
     throw new Error(INVALID_PAGE_SIZE_MESSAGE);
   }
 
-  return {
+  const normalizedSearch = typeof search === 'string'
+    ? search.trim()
+    : undefined;
+
+  const validatedParams: FindProformasParamsDto = {
     page,
     pageSize,
   };
+
+  if (normalizedSearch && normalizedSearch.length > 0) {
+    validatedParams.search = normalizedSearch;
+  }
+
+  if (status) {
+    validatedParams.status = status;
+  }
+
+  return validatedParams;
 }
 
 function validateInventariableFlag(value: unknown): boolean {
