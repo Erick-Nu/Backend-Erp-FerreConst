@@ -217,7 +217,7 @@ async function readPlaymentMethod(
     });
 
     if (!playmentMethodDB) {
-      throw new Error('Metodo de pago no encontrado');
+      throw new Error('Método de pago no encontrado');
     }
 
     return playmentMethodDB;

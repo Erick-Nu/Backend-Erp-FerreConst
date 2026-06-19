@@ -59,7 +59,7 @@ const searchConfig: RequestHandler = async (req, res, next) => {
 
     const configDB = await readConfig(config, user, companyId);
     if (!configDB) {
-      res.status(404).json({ message: 'Configuracion no encontrada' });
+      res.status(404).json({ message: 'Configuración no encontrada' });
       return;
     }
 
@@ -92,7 +92,7 @@ const updateConfigData: RequestHandler = async (req, res, next) => {
     const user: LoginUserDto = req.auth!;
     const updatedConfig = await updateConfig(config, user, companyId);
     if (!updatedConfig) {
-      res.status(404).json({ message: 'Configuracion no encontrada' });
+      res.status(404).json({ message: 'Configuración no encontrada' });
       return;
     }
 
@@ -121,7 +121,7 @@ const deleteConfigData: RequestHandler = async (req, res, next) => {
     const user: LoginUserDto = req.auth!;
     const deletedConfig = await deleteConfig(config, user, companyId);
     if (!deletedConfig) {
-      res.status(404).json({ message: 'Configuracion no encontrada' });
+      res.status(404).json({ message: 'Configuración no encontrada' });
       return;
     }
 

@@ -83,7 +83,7 @@ function validateImageType(uploadedImage: image | null): true {
 
   const extension = extname(uploadedImage.originalName).toLowerCase();
   if (!ALLOWED_IMAGE_EXTENSIONS.includes(extension as '.png' | '.jpg')) {
-    throw new Error('Solo se permiten imagenes PNG y JPG');
+    throw new Error('Solo se permiten imágenes PNG y JPG');
   }
 
   return true;

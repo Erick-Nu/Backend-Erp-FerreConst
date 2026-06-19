@@ -212,7 +212,7 @@ async function readCategory(category: FindCategoryDto, user: LoginUserDto): Prom
     });
 
     if (!categoryDB) {
-      throw new Error('Categoria no encontrada');
+      throw new Error('Categoría no encontrada');
     }
 
     return categoryDB;

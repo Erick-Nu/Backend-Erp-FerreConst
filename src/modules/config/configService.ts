@@ -155,7 +155,7 @@ async function readConfig(
     });
 
     if (!configDB) {
-      throw new Error('Configuracion no encontrada');
+      throw new Error('Configuración no encontrada');
     }
 
     return configDB;
@@ -194,7 +194,7 @@ async function readConfigByKey(
     });
 
     if (!configDB) {
-      throw new Error('Configuracion no encontrada');
+      throw new Error('Configuración no encontrada');
     }
 
     return configDB;

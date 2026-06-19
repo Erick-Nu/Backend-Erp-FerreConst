@@ -95,7 +95,7 @@ const searchPlaymentMethod: RequestHandler = async (req, res, next) => {
 
     const playmentMethodDB = await readPlaymentMethod(playmentMethod, user);
     if (!playmentMethodDB) {
-      res.status(404).json({ message: 'Metodo de pago no encontrado' });
+      res.status(404).json({ message: 'Método de pago no encontrado' });
       return;
     }
 
@@ -130,7 +130,7 @@ const updatePlaymentMethodData: RequestHandler = async (req, res, next) => {
     const user: LoginUserDto = req.auth!;
     const updatedPlaymentMethod = await updatePlaymentMethod(playmentMethod, user);
     if (!updatedPlaymentMethod) {
-      res.status(404).json({ message: 'Metodo de pago no encontrado' });
+      res.status(404).json({ message: 'Método de pago no encontrado' });
       return;
     }
 

@@ -91,7 +91,7 @@ const searchCategory: RequestHandler = async (req, res, next) => {
 
     const categoryDB = await readCategory(category, user);
     if (!categoryDB) {
-      res.status(404).json({ message: 'Categoria no encontrada' });
+      res.status(404).json({ message: 'Categoría no encontrada' });
       return;
     }
 
@@ -130,7 +130,7 @@ const updateCategoryData: RequestHandler = async (req, res, next) => {
     const user: LoginUserDto = req.auth!;
     const updatedCategory = await updateCategory(category, user);
     if (!updatedCategory) {
-      res.status(404).json({ message: 'Categoria no encontrada' });
+      res.status(404).json({ message: 'Categoría no encontrada' });
       return;
     }
 
