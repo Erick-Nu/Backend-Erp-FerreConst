@@ -5,7 +5,10 @@ import {
   hideObsoleteAlerts,
   upsertAlert,
 } from '../data/stockAlertDao.js';
-import { findStockAlertConfiguredCompanyRucValue } from '../data/stockAlertConfig.js';
+import {
+  findStockAlertCompanyAlertConfig,
+  findStockAlertConfiguredCompanyRucValue,
+} from '../data/stockAlertConfig.js';
 
 const STOCK_ALERT_COMPANY_RUC_SEPARATOR = ';';
 const AGENT_POLL_INTERVAL_MS = 300000;
@@ -19,14 +22,21 @@ async function findConfiguredCompanyRucs(): Promise<string[]> {
       return [];
     }
 
-    return rucValue.split(STOCK_ALERT_COMPANY_RUC_SEPARATOR);
+    return [
+      ...new Set(
+        rucValue
+          .split(STOCK_ALERT_COMPANY_RUC_SEPARATOR)
+          .map((ruc) => ruc.trim())
+          .filter((ruc) => ruc.length > 0),
+      ),
+    ];
   } catch (error) {
     logger.error({ err: error }, `${STOCK_ALERT_LOG_PREFIX} Error al obtener RUCs configurados`);
     throw error;
   }
 }
 
-async function processCompanyAlertBatch(emid: string): Promise<number> {
+async function processCompanyAlertBatch(emid: string, reminderMinutes: number): Promise<number> {
   const lowStockProducts = await findLowStockProductsByCompany(emid);
 
   if (lowStockProducts.length === 0) {
@@ -38,13 +48,13 @@ async function processCompanyAlertBatch(emid: string): Promise<number> {
     `${STOCK_ALERT_LOG_PREFIX} Productos con stock bajo encontrados`,
   );
 
-  let createdAlerts = 0;
+  let changedAlerts = 0;
 
   for (const product of lowStockProducts) {
     try {
       const mensaje = `Stock bajo en ${product.sucursalnombre}: ${product.prdtonombre} (${product.prdtocodigo}) - Actual: ${product.stckcantidad}, Mínimo: ${product.prdtostockminimo}`;
 
-      await upsertAlert({
+      const alertResult = await upsertAlert({
         alemid: product.stckemid,
         alsuid: product.stcksuid,
         alprdtoid: product.stckprdtoid,
@@ -53,12 +63,20 @@ async function processCompanyAlertBatch(emid: string): Promise<number> {
         alcantidadactual: product.stckcantidad,
         alstockminimo: product.prdtostockminimo,
         alstockmaximo: product.prdtostockmaximo,
-      });
+      }, reminderMinutes);
 
-      createdAlerts += 1;
+      if (alertResult.status !== 'unchanged') {
+        changedAlerts += 1;
+      }
+
       logger.info(
-        { productId: product.stckprdtoid, branchId: product.stcksuid },
-        `${STOCK_ALERT_LOG_PREFIX} Alerta de stock bajo creada/actualizada`,
+        {
+          alertId: alertResult.alid,
+          status: alertResult.status,
+          productId: product.stckprdtoid,
+          branchId: product.stcksuid,
+        },
+        `${STOCK_ALERT_LOG_PREFIX} Alerta de stock bajo procesada`,
       );
     } catch (error) {
       logger.error(
@@ -68,7 +86,7 @@ async function processCompanyAlertBatch(emid: string): Promise<number> {
     }
   }
 
-  return createdAlerts;
+  return changedAlerts;
 }
 
 async function runStockAlertIteration(): Promise<void> {
@@ -98,19 +116,29 @@ async function runStockAlertIteration(): Promise<void> {
           continue;
         }
 
-        const hiddenCount = await hideObsoleteAlerts(emid);
-
-        if (hiddenCount > 0) {
+        const companyConfig = await findStockAlertCompanyAlertConfig(emid);
+        if (!companyConfig.active) {
           logger.info(
-            { emid, hiddenCount },
+            { emid, ruc },
+            `${STOCK_ALERT_LOG_PREFIX} Empresa omitida porque stockalert.alerta.active no está habilitado`,
+          );
+          continue;
+        }
+
+        const hiddenAlerts = await hideObsoleteAlerts(emid);
+        totalAlerts += hiddenAlerts.length;
+
+        if (hiddenAlerts.length > 0) {
+          logger.info(
+            { emid, hiddenCount: hiddenAlerts.length },
             `${STOCK_ALERT_LOG_PREFIX} Alertas obsoletas ocultadas`,
           );
         }
 
-        const alertsCreated = await processCompanyAlertBatch(emid);
-        totalAlerts += alertsCreated;
+        const alertsChanged = await processCompanyAlertBatch(emid, companyConfig.reminderMinutes);
+        totalAlerts += alertsChanged;
         logger.info(
-          { emid, alertsCreated },
+          { emid, alertsChanged, reminderMinutes: companyConfig.reminderMinutes },
           `${STOCK_ALERT_LOG_PREFIX} Empresa procesada`,
         );
       } catch (error) {
@@ -119,9 +147,9 @@ async function runStockAlertIteration(): Promise<void> {
     }
 
     if (totalAlerts > 0) {
-      logger.info({ totalAlerts }, `${STOCK_ALERT_LOG_PREFIX} Alertas creadas/actualizadas en esta iteración`);
+      logger.info({ totalAlerts }, `${STOCK_ALERT_LOG_PREFIX} Alertas cambiadas en esta iteración`);
     } else {
-      logger.info(`${STOCK_ALERT_LOG_PREFIX} No se encontraron productos con stock bajo`);
+      logger.info(`${STOCK_ALERT_LOG_PREFIX} No hubo cambios de alertas en esta iteración`);
     }
   } catch (error) {
     logger.error({ err: error }, `${STOCK_ALERT_LOG_PREFIX} Error en la iteración del agente`);

@@ -21,8 +21,40 @@ type UpsertAlertData = {
   alstockmaximo: number;
 };
 
+type ExistingStockAlertResult = {
+  alid: string;
+  almensaje: string;
+  alcantidadactual: number;
+  alstockminimo: number;
+  alstockmaximo: number;
+  alvisible: boolean;
+};
+
+type UpsertAlertStatus = 'created' | 'updated' | 'reactivated' | 'reminded' | 'unchanged';
+
+type UpsertAlertResult = {
+  alid: string;
+  status: UpsertAlertStatus;
+};
+
+type ResolvedAlertResult = {
+  alid: string;
+  alemid: string;
+  alsuid: string;
+  alprdtoid: string;
+  altipo: string;
+};
+
 type CompanyRucResult = {
   emid: string;
 };
 
-export type { LowStockProductResult, UpsertAlertData, CompanyRucResult };
+export type {
+  CompanyRucResult,
+  ExistingStockAlertResult,
+  LowStockProductResult,
+  ResolvedAlertResult,
+  UpsertAlertData,
+  UpsertAlertResult,
+  UpsertAlertStatus,
+};
