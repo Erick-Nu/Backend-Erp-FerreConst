@@ -70,7 +70,7 @@ function validateImageSize(
   }
 
   if (uploadedImage.size <= 0 || uploadedImage.size > maxSizeBytes) {
-    throw new Error('El tamaño de la imagen excede el limite permitido');
+    throw new Error('El tamaño de la imagen excede el límite permitido');
   }
 
   return true;

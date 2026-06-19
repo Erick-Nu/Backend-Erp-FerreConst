@@ -44,7 +44,7 @@ function normalizeWhatsappPhone(phone: string | null): string {
 
   const cleanedPhone = phone.trim();
   if (!/^09\d{8}$/.test(cleanedPhone)) {
-    throw new Error('El teléfono del cliente debe ser un número movil válido de Ecuador para enviar proforma por WhatsApp');
+    throw new Error('El teléfono del cliente debe ser un número móvil válido de Ecuador para enviar proforma por WhatsApp');
   }
 
   return `593${cleanedPhone.slice(1)}`;
