@@ -22,28 +22,28 @@ import {
   updateCheckoutStatusById,
 } from './checkoutDao.js';
 
-const EMPTY_COMPANY_ID_MESSAGE = 'Company id is required';
-const EMPTY_BRANCH_ID_MESSAGE = 'Branch id is required';
-const EMPTY_CHECKOUT_ID_MESSAGE = 'Checkout identifier is required';
-const EMPTY_CHECKOUT_IDENTIFIER_MESSAGE = 'Checkout identifier is required';
-const EMPTY_CHECKOUT_STATUS_MESSAGE = 'Checkout status is required';
-const INVALID_COMPANY_FIND_MESSAGE = 'Company does not exist';
-const INVALID_COMPANY_STATUS_MESSAGE = 'Company is not active';
-const INVALID_USER_NOT_FOUND_MESSAGE = 'User does not exist';
-const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'User does not belong to the company';
-const INVALID_USER_STATUS_MESSAGE = 'User is not active';
-const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'User is not admin';
-const FORBIDDEN_ROL_USER_MESSAGE = 'User is not jefe, empleado or admin';
-const FORBIDDEN_ROL_USER_JEFE_MESSAGE = 'User is not jefe';
-const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'Company is not parent';
-const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'User cannot access another company';
-const INVALID_BRANCH_FIND_MESSAGE = 'Branch does not exist';
-const INVALID_BRANCH_STATUS_MESSAGE = 'Branch is not active';
-const INVALID_CHECKOUT_IDENTIFIER_EXISTS_MESSAGE = 'Checkout identifier already exists in this branch';
-const INVALID_CHECKOUT_UPDATE_STATUS_MESSAGE = 'Checkout status must be activo, inactivo or eliminado';
-const INVALID_PAGE_MESSAGE = 'Page must be a positive integer';
-const INVALID_PAGE_SIZE_MESSAGE = 'Page size must be a positive integer';
-const FORBIDDEN_UPDATE_DELETED_CHECKOUT_MESSAGE = 'Deleted checkout cannot be updated';
+const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
+const EMPTY_BRANCH_ID_MESSAGE = 'El id de sucursal es requerido';
+const EMPTY_CHECKOUT_ID_MESSAGE = 'El identificador de caja es requerido';
+const EMPTY_CHECKOUT_IDENTIFIER_MESSAGE = 'El identificador de caja es requerido';
+const EMPTY_CHECKOUT_STATUS_MESSAGE = 'El estado de caja es requerido';
+const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
+const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no esta activa';
+const INVALID_USER_NOT_FOUND_MESSAGE = 'El usuario no existe';
+const INVALID_USER_NOT_BELONG_COMPANY_MESSAGE = 'El usuario no pertenece a la empresa';
+const INVALID_USER_STATUS_MESSAGE = 'El usuario no esta activo';
+const FORBIDDEN_ROL_USER_ADMIN_MESSAGE = 'El usuario no es administrador';
+const FORBIDDEN_ROL_USER_MESSAGE = 'El usuario no es jefe, empleado o administrador';
+const FORBIDDEN_ROL_USER_JEFE_MESSAGE = 'El usuario no es jefe';
+const FORBIDDEN_COMPANY_CREATION_MESSAGE = 'La empresa no es empresa padre';
+const FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE = 'El usuario no puede acceder a otra empresa';
+const INVALID_BRANCH_FIND_MESSAGE = 'La sucursal no existe';
+const INVALID_BRANCH_STATUS_MESSAGE = 'La sucursal no esta activa';
+const INVALID_CHECKOUT_IDENTIFIER_EXISTS_MESSAGE = 'Ya existe una caja con ese identificador en esta sucursal';
+const INVALID_CHECKOUT_UPDATE_STATUS_MESSAGE = 'El estado de caja debe ser activo, inactivo o eliminado';
+const INVALID_PAGE_MESSAGE = 'La pagina debe ser un entero positivo';
+const INVALID_PAGE_SIZE_MESSAGE = 'El tamano de pagina debe ser un entero positivo';
+const FORBIDDEN_UPDATE_DELETED_CHECKOUT_MESSAGE = 'La caja eliminada no puede ser actualizada';
 const CONFLICT_STATUS_CODE = 409;
 
 type AccessOptions = {
@@ -268,7 +268,7 @@ async function readCheckout(checkout: FindCheckoutDto, user: LoginUserDto): Prom
       cjidentificador: cjid,
     });
     if (!checkoutDB) {
-      throw new Error('Checkout not found');
+      throw new Error('Caja no encontrada');
     }
 
     return mapCheckoutWithBranchToDetailResponse(checkoutDB);

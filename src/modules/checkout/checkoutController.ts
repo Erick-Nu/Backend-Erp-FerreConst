@@ -35,12 +35,12 @@ const searchCheckout: RequestHandler = async (req, res, next) => {
     const { cjsuid } = req.query;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Checkout id is required' });
+      res.status(400).json({ message: 'El id de caja es requerido' });
       return;
     }
 
     if (typeof cjsuid !== 'string') {
-      res.status(400).json({ message: 'Branch id is required' });
+      res.status(400).json({ message: 'El id de sucursal es requerido' });
       return;
     }
 
@@ -52,7 +52,7 @@ const searchCheckout: RequestHandler = async (req, res, next) => {
 
     const checkoutDB = await readCheckout(checkout, user);
     if (!checkoutDB) {
-      res.status(404).json({ message: 'Checkout not found' });
+      res.status(404).json({ message: 'Caja no encontrada' });
       return;
     }
 
@@ -70,17 +70,17 @@ const searchCheckouts: RequestHandler = async (req, res, next) => {
     const statusQuery = req.query.status;
 
     if (Array.isArray(searchQuery)) {
-      res.status(400).json({ message: 'Search must be a string' });
+      res.status(400).json({ message: 'La busqueda debe ser un texto' });
       return;
     }
 
     if (Array.isArray(statusQuery)) {
-      res.status(400).json({ message: 'Status must be a string' });
+      res.status(400).json({ message: 'El estado debe ser un texto' });
       return;
     }
 
     if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
-      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
 
@@ -114,7 +114,7 @@ const updateCheckoutStatus: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Checkout id is required' });
+      res.status(400).json({ message: 'El id de caja es requerido' });
       return;
     }
 
@@ -129,7 +129,7 @@ const updateCheckoutStatus: RequestHandler = async (req, res, next) => {
     const updatedCheckout = await updateCheckout(checkout, user);
 
     if (!updatedCheckout) {
-      res.status(404).json({ message: 'Checkout not found' });
+      res.status(404).json({ message: 'Caja no encontrada' });
       return;
     }
 
