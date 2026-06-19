@@ -31,17 +31,17 @@ const searchBrands: RequestHandler = async (req, res, next) => {
     const statusQuery = req.query.status;
 
     if (Array.isArray(searchQuery)) {
-      res.status(400).json({ message: 'Search must be a string' });
+      res.status(400).json({ message: 'La busqueda debe ser un texto' });
       return;
     }
 
     if (Array.isArray(statusQuery)) {
-      res.status(400).json({ message: 'Status must be a string' });
+      res.status(400).json({ message: 'El estado debe ser un texto' });
       return;
     }
 
     if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
-      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
 
@@ -74,7 +74,7 @@ const searchBrand: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Brand id is required' });
+      res.status(400).json({ message: 'El id de marca es requerido' });
       return;
     }
 
@@ -85,7 +85,7 @@ const searchBrand: RequestHandler = async (req, res, next) => {
 
     const brandDB = await readBrand(brand, user);
     if (!brandDB) {
-      res.status(404).json({ message: 'Brand not found' });
+      res.status(404).json({ message: 'Marca no encontrada' });
       return;
     }
 
@@ -99,7 +99,7 @@ const updateBrandData: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Brand id is required' });
+      res.status(400).json({ message: 'El id de marca es requerido' });
       return;
     }
 
@@ -120,7 +120,7 @@ const updateBrandData: RequestHandler = async (req, res, next) => {
     const user: LoginUserDto = req.auth!;
     const updatedBrand = await updateBrand(brand, user);
     if (!updatedBrand) {
-      res.status(404).json({ message: 'Brand not found' });
+      res.status(404).json({ message: 'Marca no encontrada' });
       return;
     }
 
