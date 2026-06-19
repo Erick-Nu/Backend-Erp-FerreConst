@@ -18,6 +18,8 @@ type UpdatePlaymentMethodDto = {
 type FindPlaymentMethodsParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type PlaymentMethodResponseDto = {

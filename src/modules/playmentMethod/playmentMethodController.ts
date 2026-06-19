@@ -12,6 +12,7 @@ import {
   readPlaymentMethods,
   updatePlaymentMethod,
 } from './playmentMethodService.js';
+import { isValidStatus } from '../../utils/validation.js';
 
 type UpdatePlaymentMethodRequestBody = Omit<UpdatePlaymentMethodDto, 'mpid'>;
 
@@ -36,6 +37,23 @@ const searchPlaymentMethods: RequestHandler = async (req, res, next) => {
   try {
     const pageQuery = req.query.page;
     const pageSizeQuery = req.query.pageSize;
+    const searchQuery = req.query.search;
+    const statusQuery = req.query.status;
+
+    if (Array.isArray(searchQuery)) {
+      res.status(400).json({ message: 'Search must be a string' });
+      return;
+    }
+
+    if (Array.isArray(statusQuery)) {
+      res.status(400).json({ message: 'Status must be a string' });
+      return;
+    }
+
+    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+      res.status(400).json({ message: 'Status must be activo or inactivo' });
+      return;
+    }
 
     const page = Number(pageQuery);
     const pageSize = Number(pageSizeQuery);
@@ -44,6 +62,15 @@ const searchPlaymentMethods: RequestHandler = async (req, res, next) => {
       page,
       pageSize,
     };
+
+    if (typeof searchQuery === 'string') {
+      params.search = searchQuery;
+    }
+
+    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+      params.status = statusQuery;
+    }
+
     const user: LoginUserDto = req.auth!;
     const playmentMethodsDB = await readPlaymentMethods(params, user);
 

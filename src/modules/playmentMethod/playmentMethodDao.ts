@@ -20,6 +20,8 @@ type FindPlaymentMethodByNameDao = {
 type FindPlaymentMethodsParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type UpdateColumnPlaymentMethodDao = {
@@ -150,36 +152,86 @@ async function findPlaymentMethodByName(
   }
 }
 
-const FIND_PLAYMENT_METHODS_QUERY = `
-  select mpid, mpemid, mpnombre, mpfchregistro, mpestado
-  from metodopago
-  where mpemid = $1
-  order by mpfchregistro desc
-  limit $2
-  offset $3
-`;
+type PlaymentMethodQueryValue = string | number;
 
-const COUNT_PLAYMENT_METHODS_QUERY = `
-  select count(*)::int as total
-  from metodopago
-  where mpemid = $1
-`;
+function buildFindPlaymentMethodsWhereClause(
+  companyId: string,
+  params: Pick<FindPlaymentMethodsParamsDao, 'search' | 'status'>,
+): { clause: string; values: PlaymentMethodQueryValue[] } {
+  const conditions = ['mpemid = $1'];
+  const values: PlaymentMethodQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`mpestado = $${values.length}`);
+  } else {
+    conditions.push(`mpestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`lower(trim(mpnombre)) like $${searchParamIndex}`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindPlaymentMethodsQuery(
+  params: FindPlaymentMethodsParamsDao,
+  companyId: string,
+): { query: string; values: PlaymentMethodQueryValue[] } {
+  const where = buildFindPlaymentMethodsWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select mpid, mpemid, mpnombre, mpfchregistro, mpestado
+    from metodopago
+    where ${where.clause}
+    order by mpfchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountPlaymentMethodsQuery(
+  params: FindPlaymentMethodsParamsDao,
+  companyId: string,
+): { query: string; values: PlaymentMethodQueryValue[] } {
+  const where = buildFindPlaymentMethodsWhereClause(companyId, params);
+  const query = `
+    select count(*)::int as total
+    from metodopago
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
 
 async function findPlaymentMethods(
   params: FindPlaymentMethodsParamsDao,
   companyId: string,
 ): Promise<FindPlaymentMethodsResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<PlaymentMethodRowDao[]>(FIND_PLAYMENT_METHODS_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findPlaymentMethodsQuery = buildFindPlaymentMethodsQuery(params, companyId);
+    const countPlaymentMethodsQuery = buildCountPlaymentMethodsQuery(params, companyId);
+
+    const [result, playmentMethodsTotalDB] = await Promise.all([
+      sql.unsafe<PlaymentMethodRowDao[]>(findPlaymentMethodsQuery.query, findPlaymentMethodsQuery.values),
+      sql.unsafe<{ total: number }[]>(countPlaymentMethodsQuery.query, countPlaymentMethodsQuery.values),
     ]);
 
-    const playmentMethodsTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_PLAYMENT_METHODS_QUERY, [companyId]);
     const totalItems = playmentMethodsTotalDB[0];
 
     if (!totalItems) {
@@ -196,7 +248,7 @@ async function findPlaymentMethods(
 
     return playmentMethodsDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding playment methods');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding playment methods');
     throw new Error('Error finding playment methods');
   }
 }
