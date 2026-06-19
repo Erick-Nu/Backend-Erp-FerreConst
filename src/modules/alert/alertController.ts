@@ -31,12 +31,12 @@ const searchAlerts: RequestHandler = async (req, res, next) => {
     const visto = parseOptionalBoolean(req.query.visto);
 
     if (visible === null) {
-      res.status(400).json({ message: 'Visible must be true or false' });
+      res.status(400).json({ message: 'Visible debe ser verdadero o falso' });
       return;
     }
 
     if (visto === null) {
-      res.status(400).json({ message: 'Viewed must be true or false' });
+      res.status(400).json({ message: 'Visto debe ser verdadero o falso' });
       return;
     }
 
@@ -90,7 +90,7 @@ const updateAlertAsViewed: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     if (typeof id !== 'string') {
-      res.status(400).json({ message: 'Alert id is required' });
+      res.status(400).json({ message: 'El id de alerta es requerido' });
       return;
     }
 
@@ -98,7 +98,7 @@ const updateAlertAsViewed: RequestHandler = async (req, res, next) => {
 
     await readAlertAsViewed(id, user);
 
-    res.status(200).json({ message: 'Alert marked as viewed' });
+    res.status(200).json({ message: 'Alerta marcada como vista' });
   } catch (error) {
     next(error);
   }
