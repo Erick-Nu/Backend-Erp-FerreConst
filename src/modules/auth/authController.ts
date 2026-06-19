@@ -34,7 +34,7 @@ const loginUser: RequestHandler = async (req, res, next) => {
     const authResponse = await login(credentials, metadata);
 
     if (!authResponse) {
-      res.status(400).json({ message: 'Invalid credentials' });
+      res.status(400).json({ message: 'Credenciales invalidas' });
       return;
     }
 
