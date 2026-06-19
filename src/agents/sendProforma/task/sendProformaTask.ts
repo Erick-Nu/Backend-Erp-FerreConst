@@ -50,7 +50,7 @@ async function findConfiguredCompanyRucs(): Promise<string[]> {
 }
 
 async function processSingleEmailTask(task: SendProformaModel): Promise<boolean> {
-  logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Iniciando envio de la proforma: ${task.sendprfmaidentificador}`);
+  logger.info(`${SEND_PROFORMA_EMAIL_LOG_PREFIX} Iniciando envío de la proforma: ${task.sendprfmaidentificador}`);
 
   try {
     const fromAddress = env.smtpFrom ?? task.sendemcorreo;
@@ -136,7 +136,7 @@ async function processSingleWhatsappTask(
   task: SendProformaModel,
   whatsappApiInstance: string,
 ): Promise<boolean> {
-  logger.info(`${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Iniciando envio de la proforma: ${task.sendprfmaidentificador}`);
+  logger.info(`${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Iniciando envío de la proforma: ${task.sendprfmaidentificador}`);
 
   try {
     logger.info(`${SEND_PROFORMA_WHATSAPP_LOG_PREFIX} Enviando proforma por whatsapp`);

@@ -65,7 +65,7 @@ const searchProformas: RequestHandler = async (req, res, next) => {
     const statusQuery = req.query.status;
 
     if (Array.isArray(searchQuery)) {
-      res.status(400).json({ message: 'La busqueda debe ser un texto' });
+      res.status(400).json({ message: 'La búsqueda debe ser un texto' });
       return;
     }
 

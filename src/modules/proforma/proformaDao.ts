@@ -816,7 +816,7 @@ async function saveSendProformaTask(task: CreateSendProformaTaskDao): Promise<st
 
     const createdTask = result[0];
     if (!createdTask) {
-      throw new Error('La tarea de envio de proforma no fue creada');
+      throw new Error('La tarea de envío de proforma no fue creada');
     }
 
     return createdTask.sendid;

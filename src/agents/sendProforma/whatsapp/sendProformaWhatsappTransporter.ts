@@ -104,7 +104,7 @@ async function sendProformaByWhatsapp(task: SendProformaModel, instance: string)
   }
 
   if (responseData.success !== true) {
-    throw new Error(responseData.provider?.message ?? 'La solicitud de envio de proforma por WhatsApp no fue exitosa');
+    throw new Error(responseData.provider?.message ?? 'La solicitud de envío de proforma por WhatsApp no fue exitosa');
   }
 
   logger.info(

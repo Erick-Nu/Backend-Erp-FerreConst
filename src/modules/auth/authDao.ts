@@ -193,7 +193,7 @@ async function saveAuthLoginControl(
     const controlDB = result[0];
 
     if (!controlDB) {
-      throw new Error('El control de inicio de sesion no fue guardado');
+      throw new Error('El control de inicio de sesión no fue guardado');
     }
 
     return controlDB;
