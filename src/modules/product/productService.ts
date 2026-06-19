@@ -113,7 +113,7 @@ function mapFindProductsResponse(productsDB: FindProductsResponseDao): FindProdu
 }
 
 function validateFindProductsParams(params: FindProductsParamsDto): FindProductsParamsDto {
-  const { page, pageSize } = params;
+  const { page, pageSize, search, status } = params;
 
   if (!Number.isInteger(page) || page < 1) {
     throw new Error(INVALID_PAGE_MESSAGE);
@@ -123,10 +123,24 @@ function validateFindProductsParams(params: FindProductsParamsDto): FindProducts
     throw new Error(INVALID_PAGE_SIZE_MESSAGE);
   }
 
-  return {
+  const normalizedSearch = typeof search === 'string'
+    ? search.trim()
+    : undefined;
+
+  const validatedParams: FindProductsParamsDto = {
     page,
     pageSize,
   };
+
+  if (normalizedSearch && normalizedSearch.length > 0) {
+    validatedParams.search = normalizedSearch;
+  }
+
+  if (status) {
+    validatedParams.status = status;
+  }
+
+  return validatedParams;
 }
 
 async function validateCompanyAndUserAccess(user: LoginUserDto, options: AccessOptions): Promise<void> {
@@ -397,6 +411,7 @@ async function readProducts(
         err: error,
         page: validatedParams.page,
         pageSize: validatedParams.pageSize,
+        search: validatedParams.search,
         requesterUserId: user.usid,
         requesterCompanyId: user.usemid,
       },

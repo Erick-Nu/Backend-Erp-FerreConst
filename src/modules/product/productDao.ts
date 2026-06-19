@@ -35,6 +35,8 @@ type FindProductByNameDao = {
 type FindProductsParamsDao = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type UpdateColumnProductDao = {
@@ -329,68 +331,121 @@ async function findProductByName(product: FindProductByNameDao): Promise<Product
   }
 }
 
-const FIND_PRODUCTS_QUERY = `
-  select
-    p.prdtoid,
-    p.prdtoemid,
-    p.prdtoctgriaid,
-    p.prdtomrcid,
-    p.prdtoprovid,
-    p.prdtomdiaid,
-    p.prdtocodigo,
-    p.prdtonombre,
-    p.prdtopreciocompra,
-    p.prdtoprecioventa,
-    p.prdtostockminimo,
-    p.prdtostockmaximo,
-    p.prdtoimagen,
-    p.prdtofchregistro,
-    p.prdtoestado,
-    c.ctgnombre,
-    m.mrcnombre,
-    pr.provnombre,
-    md.mdianombre,
-    md.mdiaabreviatura
-  from producto p
-  left join categoria c
-    on c.ctgriaid = p.prdtoctgriaid
-    and c.ctgriaemid = p.prdtoemid
-  left join marca m
-    on m.mrcid = p.prdtomrcid
-    and m.mrcemid = p.prdtoemid
-  left join proveedor pr
-    on pr.provid = p.prdtoprovid
-    and pr.provemid = p.prdtoemid
-  left join medida md
-    on md.mdiaid = p.prdtomdiaid
-    and md.mdiaemid = p.prdtoemid
-  where p.prdtoemid = $1
-  order by p.prdtofchregistro desc
-  limit $2
-  offset $3
-`;
+type ProductQueryValue = string | number;
 
-const COUNT_PRODUCTS_QUERY = `
-  select count(*)::int as total
-  from producto
-  where prdtoemid = $1
-`;
+function buildFindProductsWhereClause(
+  companyId: string,
+  params: Pick<FindProductsParamsDao, 'search' | 'status'>,
+): { clause: string; values: ProductQueryValue[] } {
+  const conditions = ['p.prdtoemid = $1'];
+  const values: ProductQueryValue[] = [companyId];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`p.prdtoestado = $${values.length}`);
+  } else {
+    conditions.push(`p.prdtoestado != 'eliminado'`);
+  }
+
+  if (params.search) {
+    values.push(`%${params.search.toLowerCase()}%`);
+    const searchParamIndex = values.length;
+
+    conditions.push(`(
+      lower(trim(p.prdtocodigo)) like $${searchParamIndex}
+      or lower(trim(p.prdtonombre)) like $${searchParamIndex}
+    )`);
+  }
+
+  return {
+    clause: conditions.join(' and '),
+    values,
+  };
+}
+
+function buildFindProductsQuery(
+  params: FindProductsParamsDao,
+  companyId: string,
+): { query: string; values: ProductQueryValue[] } {
+  const where = buildFindProductsWhereClause(companyId, params);
+  const offset = (params.page - 1) * params.pageSize;
+  const values = [...where.values, params.pageSize, offset];
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
+
+  const query = `
+    select
+      p.prdtoid,
+      p.prdtoemid,
+      p.prdtoctgriaid,
+      p.prdtomrcid,
+      p.prdtoprovid,
+      p.prdtomdiaid,
+      p.prdtocodigo,
+      p.prdtonombre,
+      p.prdtopreciocompra,
+      p.prdtoprecioventa,
+      p.prdtostockminimo,
+      p.prdtostockmaximo,
+      p.prdtoimagen,
+      p.prdtofchregistro,
+      p.prdtoestado,
+      c.ctgnombre,
+      m.mrcnombre,
+      pr.provnombre,
+      md.mdianombre,
+      md.mdiaabreviatura
+    from producto p
+    left join categoria c
+      on c.ctgriaid = p.prdtoctgriaid
+      and c.ctgriaemid = p.prdtoemid
+    left join marca m
+      on m.mrcid = p.prdtomrcid
+      and m.mrcemid = p.prdtoemid
+    left join proveedor pr
+      on pr.provid = p.prdtoprovid
+      and pr.provemid = p.prdtoemid
+    left join medida md
+      on md.mdiaid = p.prdtomdiaid
+      and md.mdiaemid = p.prdtoemid
+    where ${where.clause}
+    order by p.prdtofchregistro desc
+    limit $${limitParamIndex}
+    offset $${offsetParamIndex}
+  `;
+
+  return { query, values };
+}
+
+function buildCountProductsQuery(
+  params: FindProductsParamsDao,
+  companyId: string,
+): { query: string; values: ProductQueryValue[] } {
+  const where = buildFindProductsWhereClause(companyId, params);
+  const query = `
+    select count(*)::int as total
+    from producto p
+    where ${where.clause}
+  `;
+
+  return { query, values: where.values };
+}
 
 async function findProducts(
   params: FindProductsParamsDao,
   companyId: string,
 ): Promise<FindProductsResponseDao> {
-  const { page, pageSize } = params;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, search } = params;
 
   try {
-    const result = await sql.unsafe<ProductRowDao[]>(FIND_PRODUCTS_QUERY, [
-      companyId,
-      pageSize,
-      offset,
+    const findProductsQuery = buildFindProductsQuery(params, companyId);
+    const countProductsQuery = buildCountProductsQuery(params, companyId);
+
+    const [result, productsTotalDB] = await Promise.all([
+      sql.unsafe<ProductRowDao[]>(findProductsQuery.query, findProductsQuery.values),
+      sql.unsafe<{ total: number }[]>(countProductsQuery.query, countProductsQuery.values),
     ]);
 
-    const productsTotalDB = await sql.unsafe<{ total: number }[]>(COUNT_PRODUCTS_QUERY, [companyId]);
     const totalItems = productsTotalDB[0];
 
     if (!totalItems) {
@@ -407,7 +462,7 @@ async function findProducts(
 
     return productsDB;
   } catch (error) {
-    logger.error({ err: error, page, pageSize, companyId }, 'Error finding products');
+    logger.error({ err: error, page, pageSize, search, companyId }, 'Error finding products');
     throw new Error('Error finding products');
   }
 }

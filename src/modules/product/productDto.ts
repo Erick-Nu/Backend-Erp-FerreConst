@@ -38,6 +38,8 @@ type UpdateProductDto = {
 type FindProductsParamsDto = {
   page: number;
   pageSize: number;
+  search?: string;
+  status?: Status;
 };
 
 type ProductCategoryResponseDto = {
