@@ -155,21 +155,6 @@ async function findCompanyById(id: string): Promise<CompanyModel | null> {
   }
 }
 
-const FIND_COMPANIES_QUERY = `
-  select emid, emruc, emrznsocial, emcorreo, emlogo, emcodigo, emfchregistro, emestado
-  from empresa
-  where empadre = false
-  order by emfchregistro desc
-  limit $1
-  offset $2
-`;
-
-const COUNT_COMPANIES_QUERY = `
-  select count(*)::int as total
-  from empresa
-  where empadre = false
-`;
-
 function buildFindCompaniesWhereClause(
   params: Pick<FindCompaniesParamsDao, 'search' | 'status'>,
 ): { clause: string; values: CompanyQueryValue[] } {

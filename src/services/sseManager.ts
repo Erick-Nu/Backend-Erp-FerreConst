@@ -1,5 +1,4 @@
 import type { Response } from 'express';
-import { logger } from '../utils/logger.js';
 
 const SSE_KEEPALIVE_INTERVAL_MS = 15000;
 

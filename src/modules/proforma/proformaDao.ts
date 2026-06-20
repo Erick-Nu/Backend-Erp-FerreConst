@@ -329,37 +329,6 @@ async function findProformaById(
   }
 }
 
-const FIND_PROFORMAS_QUERY = `
-  select
-    p.prfmaid,
-    p.prfmaidentificador,
-    p.prfmaestado,
-    p.prfmafchregistro,
-    p.prfmaclnteid,
-    cl.clntenombre,
-    cl.clnteidentificacion,
-    p.prfmampid,
-    mp.mpnombre,
-    p.prfmatotal
-  from proforma p
-  left join cliente cl
-    on cl.clnteid = p.prfmaclnteid
-    and cl.clnteemid = p.prfmaemid
-  left join metodopago mp
-    on mp.mpid = p.prfmampid
-    and mp.mpemid = p.prfmaemid
-  where p.prfmaemid = $1
-  order by p.prfmafchregistro desc
-  limit $2
-  offset $3
-`;
-
-const COUNT_PROFORMAS_QUERY = `
-  select count(*)::int as total
-  from proforma
-  where prfmaemid = $1
-`;
-
 function buildFindProformasWhereClause(
   companyId: string,
   params: Pick<FindProformasParamsDao, 'search' | 'status'>,

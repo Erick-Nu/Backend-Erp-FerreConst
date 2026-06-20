@@ -172,32 +172,6 @@ async function findCheckoutByRowId(checkout: FindCheckoutByRowIdDao): Promise<Ch
   }
 }
 
-const FIND_CHECKOUTS_QUERY = `
-  select
-    c.cjid,
-    c.cjemid,
-    c.cjsuid,
-    c.cjidentificador,
-    c.cjfchregistro,
-    c.cjestado,
-    s.suid,
-    s.sunombre,
-    s.suidentificador,
-    s.suestado
-  from caja c
-  inner join sucursal s on s.suid = c.cjsuid and s.suemid = c.cjemid
-  where c.cjemid = $1
-  order by c.cjfchregistro desc
-  limit $2
-  offset $3
-`;
-
-const COUNT_CHECKOUTS_QUERY = `
-  select count(*)::int as total
-  from caja
-  where cjemid = $1
-`;
-
 function buildFindCheckoutsWhereClause(
   companyId: string,
   params: Pick<FindCheckoutsParamsDao, 'search' | 'status'>,
