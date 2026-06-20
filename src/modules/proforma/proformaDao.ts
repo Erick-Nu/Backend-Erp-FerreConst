@@ -13,6 +13,7 @@ type CreateProformaHeaderDao = {
   prfmasubtotal: number;
   prfmadescuento: number;
   prfmatotal: number;
+  prfmaestado: ProformaStatus;
 };
 
 type CreateProformaItemDao = {
@@ -157,9 +158,10 @@ const SAVE_PROFORMA_HEADER_QUERY = `
     prfmaidentificador,
     prfmasubtotal,
     prfmadescuento,
-    prfmatotal
+    prfmatotal,
+    prfmaestado
   )
-  values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+  values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
   returning prfmaid
 `;
 
@@ -178,6 +180,7 @@ async function saveProformaHeader(
       proforma.prfmasubtotal,
       proforma.prfmadescuento,
       proforma.prfmatotal,
+      proforma.prfmaestado,
     ]);
 
     const proformaDB = result[0];

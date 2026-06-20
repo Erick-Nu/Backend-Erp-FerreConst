@@ -924,6 +924,7 @@ async function createProforma(proforma: CreateProformaDto, user: LoginUserDto): 
       prfmasubtotal,
       prfmadescuento,
       prfmatotal,
+      prfmaestado: 'emitida',
     });
 
     for (const item of validatedItems) {
