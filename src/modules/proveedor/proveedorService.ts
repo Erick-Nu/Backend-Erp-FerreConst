@@ -259,8 +259,6 @@ async function createProveedor(proveedor: CreateProveedorDto, user: LoginUserDto
 
     if (!proveedorDB) {
       throw new Error('El proveedor no fue creado');
-... (keep the rest)
-      throw new Error('Proveedor no encontrado');
     }
 
     return mapProveedorRowToResponse(proveedorDB);
