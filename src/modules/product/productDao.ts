@@ -162,7 +162,7 @@ const FIND_PRODUCT_BY_ID_QUERY = `
     md.mdianombre,
     md.mdiaabreviatura
   from producto p
-  left join categoría c
+  left join categoria c
     on c.ctgriaid = p.prdtoctgriaid
     and c.ctgriaemid = p.prdtoemid
   left join marca m
@@ -226,7 +226,7 @@ const FIND_PRODUCT_BY_CODE_QUERY = `
     md.mdianombre,
     md.mdiaabreviatura
   from producto p
-  left join categoría c
+  left join categoria c
     on c.ctgriaid = p.prdtoctgriaid
     and c.ctgriaemid = p.prdtoemid
   left join marca m
@@ -290,7 +290,7 @@ const FIND_PRODUCT_BY_NAME_QUERY = `
     md.mdianombre,
     md.mdiaabreviatura
   from producto p
-  left join categoría c
+  left join categoria c
     on c.ctgriaid = p.prdtoctgriaid
     and c.ctgriaemid = p.prdtoemid
   left join marca m
@@ -396,7 +396,7 @@ function buildFindProductsQuery(
       md.mdianombre,
       md.mdiaabreviatura
     from producto p
-    left join categoría c
+    left join categoria c
       on c.ctgriaid = p.prdtoctgriaid
       and c.ctgriaemid = p.prdtoemid
     left join marca m

@@ -19,7 +19,7 @@ type UpdateColumnConfigDao = {
 }
 
 const SAVE_CONFIG_QUERY = `
-  insert into configuración (cfemid, cfclave, cfvalor)
+  insert into configuracion (cfemid, cfclave, cfvalor)
   values ($1, $2, $3)
   returning cfid
 `;
@@ -62,7 +62,7 @@ async function saveConfig(config: CreateConfigDao): Promise<string> {
 
 const FIND_CONFIG_BY_KEY_QUERY = `
   select cfid, cfemid, cfclave, cfvalor
-  from configuración
+  from configuracion
   where cfemid = $1 and lower(trim(cfclave)) = lower(trim($2))
 `;
 
@@ -91,7 +91,7 @@ async function findConfigByKey(config: FindConfigByKeyDao): Promise<Config | nul
 
 const FIND_CONFIGS_QUERY = `
   select cfid, cfemid, cfclave, cfvalor
-  from configuración
+  from configuracion
   where cfemid = $1
   order by cfclave asc
 `;
@@ -117,7 +117,7 @@ const UPDATE_CONFIG_BY_KEY_QUERY = (dataDB: UpdateColumnConfigDao[], config: Fin
   values.push(config.cfemid);
 
   const query = `
-    update configuración
+    update configuracion
     set ${setClause.join(', ')}
     where lower(trim(cfclave)) = lower(trim($${values.length - 1})) and cfemid = $${values.length}
     returning cfid, cfemid, cfclave, cfvalor
@@ -155,7 +155,7 @@ async function updateConfigByKey(
 }
 
 const DELETE_CONFIG_BY_KEY_QUERY = `
-  delete from configuración
+  delete from configuracion
   where lower(trim(cfclave)) = lower(trim($1)) and cfemid = $2
   returning cfid, cfemid, cfclave, cfvalor
 `;

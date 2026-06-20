@@ -416,7 +416,7 @@ Responsabilidad:
 
 Dependencias operativas:
 
-- configuracion global en tabla `configuracion` con clave `stockalert.empresa`
+- configuracion global en tabla `configuracion` con clave `stockalert.alerta.empresa`
 
 Comportamiento:
 

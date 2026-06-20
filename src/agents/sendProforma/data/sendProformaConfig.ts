@@ -15,7 +15,7 @@ type SendProformaChannel = 'email' | 'whatsapp';
 
 const FIND_SEND_PROFORMA_CONFIGURED_COMPANY_RUC_QUERY = `
   select cfvalor
-  from configuración
+  from configuracion
   where cfclave = 'sendproforma.email.empresa'
   limit 1
 `;
@@ -33,7 +33,7 @@ async function findSendProformaConfiguredCompanyRucValue(): Promise<string | und
 
 const FIND_SEND_PROFORMA_COMPANY_CONFIG_ROWS_QUERY = `
   select cfclave, cfvalor
-  from configuración
+  from configuracion
   where cfemid = $1 and cfclave like 'sendproforma%'
 `;
 

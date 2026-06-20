@@ -48,7 +48,7 @@ type FindCategoriesResponseDao = {
 };
 
 const SAVE_CATEGORY_QUERY = `
-  insert into categoría (ctgriaemid, ctgnombre, ctgriadescripcion)
+  insert into categoria (ctgriaemid, ctgnombre, ctgriadescripcion)
   values ($1, $2, $3)
   returning ctgriaid
 `;
@@ -89,7 +89,7 @@ async function saveCategory(category: CreateCategoryDao): Promise<string> {
 
 const FIND_CATEGORY_BY_ID_QUERY = `
   select ctgriaid, ctgriaemid, ctgnombre, ctgriadescripcion, ctgriafchregistro, ctgriaestado
-  from categoría
+  from categoria
   where ctgriaemid = $1 and ctgriaid = $2
 `;
 
@@ -121,7 +121,7 @@ async function findCategoryById(category: FindCategoryByIdDao): Promise<Category
 
 const FIND_CATEGORY_BY_NAME_QUERY = `
   select ctgriaid, ctgriaemid, ctgnombre, ctgriadescripcion, ctgriafchregistro, ctgriaestado
-  from categoría
+  from categoria
   where ctgriaemid = $1 and lower(trim(ctgnombre)) = lower(trim($2))
 `;
 
@@ -195,7 +195,7 @@ function buildFindCategoriesQuery(
 
   const query = `
     select ctgriaid, ctgriaemid, ctgnombre, ctgriadescripcion, ctgriafchregistro, ctgriaestado
-    from categoría
+    from categoria
     where ${where.clause}
     order by ctgriafchregistro desc
     limit $${limitParamIndex}
@@ -212,7 +212,7 @@ function buildCountCategoriesQuery(
   const where = buildFindCategoriesWhereClause(companyId, params);
   const query = `
     select count(*)::int as total
-    from categoría
+    from categoria
     where ${where.clause}
   `;
 
@@ -266,7 +266,7 @@ const UPDATE_CATEGORY_BY_ID_QUERY = (dataDB: UpdateColumnCategoryDao[], category
   values.push(category.ctgriaemid);
 
   const query = `
-    update categoría
+    update categoria
     set ${setClause.join(', ')}
     where ctgriaid = $${values.length - 1} and ctgriaemid = $${values.length}
     returning ctgriaid, ctgriaemid, ctgnombre, ctgriadescripcion, ctgriafchregistro, ctgriaestado
