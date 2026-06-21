@@ -4,6 +4,8 @@ import type {
   CompanyRucResult,
   ExistingStockAlertResult,
   LowStockProductResult,
+  NormalizedExistingStockAlertResult,
+  NormalizedLowStockProductResult,
   ResolvedAlertResult,
   UpsertAlertData,
   UpsertAlertResult,
@@ -11,6 +13,28 @@ import type {
 } from './stockAlertModel.js';
 
 const STOCK_ALERT_LOG_PREFIX = '[stockAlertTask]';
+
+function normalizeNumericValue(value: number | string): number {
+  return typeof value === 'number' ? value : Number(value);
+}
+
+function normalizeLowStockProduct(product: LowStockProductResult): NormalizedLowStockProductResult {
+  return {
+    ...product,
+    stckcantidad: normalizeNumericValue(product.stckcantidad),
+    prdtostockminimo: normalizeNumericValue(product.prdtostockminimo),
+    prdtostockmaximo: normalizeNumericValue(product.prdtostockmaximo),
+  };
+}
+
+function normalizeExistingStockAlert(alert: ExistingStockAlertResult): NormalizedExistingStockAlertResult {
+  return {
+    ...alert,
+    alcantidadactual: normalizeNumericValue(alert.alcantidadactual),
+    alstockminimo: normalizeNumericValue(alert.alstockminimo),
+    alstockmaximo: normalizeNumericValue(alert.alstockmaximo),
+  };
+}
 
 const LOW_STOCK_PRODUCT_SELECT_COLUMNS = `
     s.stckemid,
@@ -45,9 +69,10 @@ ${LOW_STOCK_PRODUCT_RELATION_JOINS}
     and br.suestado = 'activo'
 `;
 
-async function findLowStockProductsByCompany(emid: string): Promise<LowStockProductResult[]> {
+async function findLowStockProductsByCompany(emid: string): Promise<NormalizedLowStockProductResult[]> {
   try {
-    return await sql.unsafe<LowStockProductResult[]>(FIND_LOW_STOCK_PRODUCTS_QUERY, [emid]);
+    const products = await sql.unsafe<LowStockProductResult[]>(FIND_LOW_STOCK_PRODUCTS_QUERY, [emid]);
+    return products.map(normalizeLowStockProduct);
   } catch (error) {
     logger.error({ err: error, emid }, `${STOCK_ALERT_LOG_PREFIX} Error finding low stock products by company`);
     throw new Error('Error finding low stock products by company');
@@ -72,14 +97,15 @@ async function findLowStockProductByStock(
   emid: string,
   suid: string,
   productId: string,
-): Promise<LowStockProductResult | null> {
+): Promise<NormalizedLowStockProductResult | null> {
   try {
     const result = await sql.unsafe<LowStockProductResult[]>(FIND_LOW_STOCK_PRODUCT_BY_STOCK_QUERY, [
       emid,
       suid,
       productId,
     ]);
-    return result[0] ?? null;
+    const product = result[0];
+    return product ? normalizeLowStockProduct(product) : null;
   } catch (error) {
     logger.error(
       { err: error, emid, suid, productId },
@@ -122,7 +148,7 @@ const FIND_STOCK_ALERT_BY_KEY_QUERY = `
   limit 1
 `;
 
-async function findStockAlertByKey(alert: UpsertAlertData): Promise<ExistingStockAlertResult | null> {
+async function findStockAlertByKey(alert: UpsertAlertData): Promise<NormalizedExistingStockAlertResult | null> {
   try {
     const result = await sql.unsafe<ExistingStockAlertResult[]>(FIND_STOCK_ALERT_BY_KEY_QUERY, [
       alert.alemid,
@@ -130,7 +156,8 @@ async function findStockAlertByKey(alert: UpsertAlertData): Promise<ExistingStoc
       alert.alprdtoid,
       alert.altipo,
     ]);
-    return result[0] ?? null;
+    const existingAlert = result[0];
+    return existingAlert ? normalizeExistingStockAlert(existingAlert) : null;
   } catch (error) {
     logger.error(
       { err: error, emid: alert.alemid, productId: alert.alprdtoid },
@@ -141,7 +168,7 @@ async function findStockAlertByKey(alert: UpsertAlertData): Promise<ExistingStoc
 }
 
 function resolveUpsertAlertStatus(
-  existingAlert: ExistingStockAlertResult | null,
+  existingAlert: NormalizedExistingStockAlertResult | null,
   alert: UpsertAlertData,
 ): UpsertAlertStatus {
   if (!existingAlert) {
@@ -283,7 +310,8 @@ const HIDE_OBSOLETE_ALERTS_QUERY = `
   update alerta
   set
     alvisible = false,
-    alfchactualizacion = current_timestamp
+    alfchactualizacion = current_timestamp,
+    alfchnotificacion = current_timestamp
   where alemid = $1
     and altipo = 'stock_bajo'
     and alvisible = true
@@ -326,7 +354,8 @@ const HIDE_ALERT_BY_STOCK_QUERY = `
   update alerta
   set
     alvisible = false,
-    alfchactualizacion = current_timestamp
+    alfchactualizacion = current_timestamp,
+    alfchnotificacion = current_timestamp
   where alemid = $1
     and alsuid = $2
     and alprdtoid = $3

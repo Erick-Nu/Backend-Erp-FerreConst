@@ -2,9 +2,9 @@ type LowStockProductResult = {
   stckemid: string;
   stcksuid: string;
   stckprdtoid: string;
-  stckcantidad: number;
-  prdtostockminimo: number;
-  prdtostockmaximo: number;
+  stckcantidad: number | string;
+  prdtostockminimo: number | string;
+  prdtostockmaximo: number | string;
   prdtonombre: string;
   prdtocodigo: string;
   sucursalnombre: string;
@@ -24,10 +24,28 @@ type UpsertAlertData = {
 type ExistingStockAlertResult = {
   alid: string;
   almensaje: string;
+  alcantidadactual: number | string;
+  alstockminimo: number | string;
+  alstockmaximo: number | string;
+  alvisible: boolean;
+};
+
+type NormalizedLowStockProductResult = Omit<
+  LowStockProductResult,
+  'stckcantidad' | 'prdtostockminimo' | 'prdtostockmaximo'
+> & {
+  stckcantidad: number;
+  prdtostockminimo: number;
+  prdtostockmaximo: number;
+};
+
+type NormalizedExistingStockAlertResult = Omit<
+  ExistingStockAlertResult,
+  'alcantidadactual' | 'alstockminimo' | 'alstockmaximo'
+> & {
   alcantidadactual: number;
   alstockminimo: number;
   alstockmaximo: number;
-  alvisible: boolean;
 };
 
 type UpsertAlertStatus = 'created' | 'updated' | 'reactivated' | 'reminded' | 'unchanged';
@@ -53,6 +71,8 @@ export type {
   CompanyRucResult,
   ExistingStockAlertResult,
   LowStockProductResult,
+  NormalizedExistingStockAlertResult,
+  NormalizedLowStockProductResult,
   ResolvedAlertResult,
   UpsertAlertData,
   UpsertAlertResult,
