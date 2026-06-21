@@ -44,7 +44,7 @@ type ProveedorBrandResponseDto = {
 type ProveedorResponseDto = {
   provid: string;
   provemid: string;
-  categoría: ProveedorCategoryResponseDto | null;
+  categoria: ProveedorCategoryResponseDto | null;
   marca: ProveedorBrandResponseDto | null;
   provnombre: string;
   provtelefono: string;

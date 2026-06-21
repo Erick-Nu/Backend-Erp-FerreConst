@@ -59,7 +59,7 @@ function mapProveedorRowToResponse(proveedor: ProveedorRowDao): ProveedorRespons
   return {
     provid: proveedor.provid,
     provemid: proveedor.provemid,
-    categoría: proveedor.provctgriaid
+    categoria: proveedor.provctgriaid
       ? { ctgriaid: proveedor.provctgriaid, ctgnombre: proveedor.ctgnombre ?? null, ctgriadescripcion: proveedor.ctgriadescripcion ?? null }
       : null,
     marca: proveedor.provmrcid
