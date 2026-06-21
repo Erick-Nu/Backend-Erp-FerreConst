@@ -15,6 +15,7 @@ type AlertRowDao = {
   alvisto: boolean;
   alfchcreacion: Date;
   alfchactualizacion: Date;
+  alfchnotificacion: Date;
 };
 
 type AlertRowWithJoinsDao = AlertRowDao & {
@@ -62,7 +63,7 @@ type AlertSummaryBranchDao = {
   totalunseen: number;
 };
 
-type QueryValue = string | boolean | number | Date;
+type QueryValue = string | boolean | number | Date | null;
 
 type QueryWithValues = {
   query: string;
@@ -83,6 +84,7 @@ const ALERT_SELECT_COLUMNS = `
     a.alvisto,
     a.alfchcreacion,
     a.alfchactualizacion,
+    coalesce(a.alfchnotificacion, a.alfchactualizacion) as alfchnotificacion,
     s.suidentificador,
     s.sunombre,
     p.prdtocodigo,
@@ -219,7 +221,7 @@ ${ALERT_RELATION_JOINS}
       a.alfchactualizacion > $2
       or (
         a.alfchactualizacion = $2
-        and a.alid > $3
+        and ($3::uuid is null or a.alid > $3::uuid)
       )
     )
   order by a.alfchactualizacion asc, a.alid asc
@@ -228,7 +230,7 @@ ${ALERT_RELATION_JOINS}
 async function findRecentChangedAlerts(
   emid: string,
   sinceUpdatedAt: Date,
-  sinceAlertId: string,
+  sinceAlertId: string | null,
 ): Promise<AlertEventRowDao[]> {
   try {
     return await sql.unsafe<AlertEventRowDao[]>(

@@ -29,6 +29,7 @@ type AlertResponseDto = {
   alvisto: boolean;
   alfchcreacion: Date;
   alfchactualizacion: Date;
+  alfchnotificacion: Date;
 };
 
 type FindAlertsResponseDto = {

@@ -23,7 +23,7 @@ import type {
 import type { AlertEventRowDao, AlertRowWithJoinsDao, FindAlertsFiltersDao } from './alertDao.js';
 
 const SSE_POLL_INTERVAL_MS = 5000;
-const SSE_CURSOR_INITIAL_ALERT_ID = '';
+const SSE_CURSOR_INITIAL_ALERT_ID = null;
 const EMPTY_ALERT_ID_MESSAGE = 'El id de alerta es requerido';
 const INVALID_COMPANY_FIND_MESSAGE = 'La empresa no existe';
 const INVALID_COMPANY_STATUS_MESSAGE = 'La empresa no está activa';
@@ -78,6 +78,7 @@ function mapAlertRowToResponse(alert: AlertRowWithJoinsDao): AlertResponseDto {
     alvisto: alert.alvisto,
     alfchcreacion: alert.alfchcreacion,
     alfchactualizacion: alert.alfchactualizacion,
+    alfchnotificacion: alert.alfchnotificacion,
   };
 }
 
@@ -250,7 +251,7 @@ async function subscribeToAlerts(user: LoginUserDto, res: Response): Promise<voi
   await validateAlertAccess(user, { targetCompanyId: user.usemid });
 
   let lastPollUpdatedAt = new Date();
-  let lastPollAlertId = SSE_CURSOR_INITIAL_ALERT_ID;
+  let lastPollAlertId: string | null = SSE_CURSOR_INITIAL_ALERT_ID;
   let pollId: ReturnType<typeof setInterval> | null = null;
 
   createSSEConnection(res, () => {
