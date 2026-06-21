@@ -75,7 +75,7 @@ function mapProductRowToResponse(product: ProductRowDao): ProductResponseDto {
   return {
     prdtoid: product.prdtoid,
     prdtoemid: product.prdtoemid,
-    categoría: {
+    categoria: {
       ctgriaid: product.prdtoctgriaid,
       ctgnombre: product.ctgnombre ?? null,
       ctgriadescripcion: product.ctgriadescripcion ?? null,

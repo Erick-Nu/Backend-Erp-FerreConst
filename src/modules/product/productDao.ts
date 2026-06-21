@@ -391,6 +391,7 @@ function buildFindProductsQuery(
       p.prdtofchregistro,
       p.prdtoestado,
       c.ctgnombre,
+      c.ctgriadescripcion,
       m.mrcnombre,
       pr.provnombre,
       md.mdianombre,
