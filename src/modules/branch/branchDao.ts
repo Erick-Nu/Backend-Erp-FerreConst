@@ -28,9 +28,9 @@ type FindBranchesParamsDao = {
 };
 
 type UpdateColumnBranchDao = {
-  column: string,
+  column: string;
   value: string | number | boolean | Date | null;
-}
+};
 
 type FindBranchesResponseDao = {
   items: BranchRowDao[];
@@ -52,27 +52,29 @@ type BranchRowDao = {
 };
 
 const SAVE_BRANCH_QUERY = `
-  insert into sucursal (suemid, sunombre, suidentificador)
-  values ($1, $2, $3) returning suid
+  insert into sucursal (suemid, sunombre, suidentificador, sudireccion, sucorreo)
+  values ($1, $2, $3, $4, $5) returning suid
 `;
 
 async function saveBranch(branch: CreateBranchDao): Promise<string> {
   try {
-    const result = await sql.unsafe<{suid: string}[]>(SAVE_BRANCH_QUERY, [
+    const result = await sql.unsafe<{ suid: string }[]>(SAVE_BRANCH_QUERY, [
       branch.suemid,
       branch.sunombre,
       branch.suidentificador,
+      branch.sudireccion,
+      branch.sucorreo,
     ]);
 
     const branchDB = result[0];
-      
-    if (!branchDB ) {
+
+    if (!branchDB) {
       throw new Error('La sucursal no fue creada');
     }
 
     logger.info({ branchId: branchDB.suid, companyId: branch.suemid }, 'Branch created');
 
-    return branchDB.suid; 
+    return branchDB.suid;
   } catch (error) {
     logger.error({ err: error, companyId: branch.suemid }, 'Error saving branch');
     throw new Error('Error saving branch');
@@ -83,14 +85,20 @@ const FIND_BRANCH_BY_IDENTIFIER_QUERY = `select suid from sucursal where suemid 
 
 async function findBranchByIdentifier(branch: FindBranchByIdentifierDao): Promise<string | null> {
   try {
-    const result = await sql.unsafe<{ suid: string }[]>(FIND_BRANCH_BY_IDENTIFIER_QUERY, [branch.suemid, branch.suidentificador]);
+    const result = await sql.unsafe<{ suid: string }[]>(FIND_BRANCH_BY_IDENTIFIER_QUERY, [
+      branch.suemid,
+      branch.suidentificador,
+    ]);
     const identifierDB = result[0];
     if (!identifierDB) {
       return null;
     }
     return identifierDB.suid;
   } catch (error) {
-    logger.error({ err: error, companyId: branch.suemid, identifier: branch.suidentificador }, 'Error finding branch by identifier');
+    logger.error(
+      { err: error, companyId: branch.suemid, identifier: branch.suidentificador },
+      'Error finding branch by identifier',
+    );
     throw new Error('Error finding branch by identifier');
   }
 }
@@ -103,7 +111,10 @@ const FIND_BRANCH_BY_ID_QUERY = `
 
 async function findBranchById(branch: FindBranchByIdDao): Promise<BranchRowDao | null> {
   try {
-    const result = await sql.unsafe<BranchRowDao[]>(FIND_BRANCH_BY_ID_QUERY, [branch.suemid, branch.suid]);
+    const result = await sql.unsafe<BranchRowDao[]>(FIND_BRANCH_BY_ID_QUERY, [
+      branch.suemid,
+      branch.suid,
+    ]);
     const branchDB = result[0];
 
     if (!branchDB) {
@@ -112,7 +123,10 @@ async function findBranchById(branch: FindBranchByIdDao): Promise<BranchRowDao |
 
     return branchDB;
   } catch (error) {
-    logger.error({ err: error, companyId: branch.suemid, branchId: branch.suid }, 'Error finding branch by id');
+    logger.error(
+      { err: error, companyId: branch.suemid, branchId: branch.suid },
+      'Error finding branch by id',
+    );
     throw new Error('Error finding branch by id');
   }
 }
@@ -241,7 +255,10 @@ const UPDATE_BRANCH_BY_ID_QUERY = (dataDB: UpdateColumnBranchDao[], branch: Find
   return { query, values };
 };
 
-async function updateBranchById(dataDB: UpdateColumnBranchDao[], branch: FindBranchByIdDao): Promise<BranchRowDao | null> {
+async function updateBranchById(
+  dataDB: UpdateColumnBranchDao[],
+  branch: FindBranchByIdDao,
+): Promise<BranchRowDao | null> {
   try {
     const { query, values } = UPDATE_BRANCH_BY_ID_QUERY(dataDB, branch);
     const result = await sql.unsafe<BranchRowDao[]>(query, values);
