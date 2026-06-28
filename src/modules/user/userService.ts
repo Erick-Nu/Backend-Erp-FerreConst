@@ -29,8 +29,7 @@ import {
   validateRole,
   validateStatus,
 } from '../../utils/validation.js';
-import { findCompanyById } from  '../company/companyDao.js';
-
+import { findCompanyById } from '../company/companyDao.js';
 
 const EMPTY_COMPANY_ID_MESSAGE = 'El id de empresa es requerido';
 const EMPTY_NAME_MESSAGE = 'El nombre es requerido';
@@ -58,7 +57,8 @@ const INVALID_PAGE_SIZE_MESSAGE = 'El tamaño de página debe ser un entero posi
 const EMPTY_USER_ID_MESSAGE = 'El id de usuario es requerido';
 const EMPTY_USER_STATUS_MESSAGE = 'El estado de usuario es requerido';
 const EMPTY_USER_IMAGE_MESSAGE = 'La imagen de usuario es requerida';
-const INVALID_USER_UPDATE_STATUS_MESSAGE = 'El estado de usuario debe ser activo, inactivo o eliminado';
+const INVALID_USER_UPDATE_STATUS_MESSAGE =
+  'El estado de usuario debe ser activo, inactivo o eliminado';
 const EMPTY_UPDATE_USER_MESSAGE = 'Al menos un campo es requerido para actualizar el usuario';
 const FORBIDDEN_UPDATE_DELETED_USER_MESSAGE = 'El usuario eliminado no puede cambiar de estado';
 
@@ -79,9 +79,7 @@ function validateFindUsersParams(params: FindUsersParamsDto): FindUsersParamsDto
     throw new Error(INVALID_PAGE_SIZE_MESSAGE);
   }
 
-  const normalizedSearch = typeof search === 'string'
-    ? search.trim()
-    : undefined;
+  const normalizedSearch = typeof search === 'string' ? search.trim() : undefined;
 
   const validatedParams: FindUsersParamsDto = {
     page,
@@ -99,7 +97,10 @@ function validateFindUsersParams(params: FindUsersParamsDto): FindUsersParamsDto
   return validatedParams;
 }
 
-async function validateCompanyAndUserAccess(user: LoginUserDto, options: AccessOptions): Promise<void> {
+async function validateCompanyAndUserAccess(
+  user: LoginUserDto,
+  options: AccessOptions,
+): Promise<void> {
   const { requireParentCompany, requireAdminUser, targetCompanyId } = options;
 
   const company = await findCompanyById(user.usemid);
@@ -152,7 +153,11 @@ async function createUser(user: CreateUserDto, userLogin: LoginUserDto): Promise
   const usnombre = validateName(user.usnombre, EMPTY_NAME_MESSAGE, INVALID_NAME_MESSAGE);
   const usapodo = validateRequiredString(user.usapodo, EMPTY_NICKNAME_MESSAGE);
   const uscorreo = validateEmail(user.uscorreo, EMPTY_EMAIL_MESSAGE, INVALID_EMAIL_MESSAGE);
-  const uspassword = validatePassword(user.uspassword, EMPTY_PASSWORD_MESSAGE, INVALID_PASSWORD_MESSAGE);
+  const uspassword = validatePassword(
+    user.uspassword,
+    EMPTY_PASSWORD_MESSAGE,
+    INVALID_PASSWORD_MESSAGE,
+  );
   const usimagen = user.usimagen;
   const usrol = validateRole(user.usrol, EMPTY_ROLE_MESSAGE, INVALID_ROLE_MESSAGE);
 
@@ -160,14 +165,14 @@ async function createUser(user: CreateUserDto, userLogin: LoginUserDto): Promise
     const isCrossCompanyCreation = usemid !== userLogin.usemid;
     const access = isCrossCompanyCreation
       ? {
-        requireParentCompany: true,
-        requireAdminUser: true,
-      }
+          requireParentCompany: true,
+          requireAdminUser: true,
+        }
       : {
-        requireParentCompany: false,
-        requireAdminUser: false,
-        targetCompanyId: usemid,
-      };
+          requireParentCompany: false,
+          requireAdminUser: false,
+          targetCompanyId: usemid,
+        };
 
     await validateCompanyAndUserAccess(userLogin, access);
 
@@ -184,7 +189,7 @@ async function createUser(user: CreateUserDto, userLogin: LoginUserDto): Promise
       if (!requesterUser) {
         throw new Error(INVALID_USER_NOT_FOUND_MESSAGE);
       }
-      
+
       if (requesterUser.usemid !== empresaDB.emid) {
         throw new Error(FORBIDDEN_CROSS_COMPANY_ACCESS_MESSAGE);
       }
@@ -239,14 +244,16 @@ async function createUser(user: CreateUserDto, userLogin: LoginUserDto): Promise
     };
 
     return userResponse;
-
-  } catch(error) {
+  } catch (error) {
     logger.error({ err: error, companyId: usemid, email: uscorreo }, 'Error creating user');
     throw error;
   }
 }
 
-async function readUsers(params: FindUsersParamsDto, user: LoginUserDto): Promise<FindUsersResponseDto> {
+async function readUsers(
+  params: FindUsersParamsDto,
+  user: LoginUserDto,
+): Promise<FindUsersResponseDto> {
   const validatedParams = validateFindUsersParams(params);
   try {
     const access = {
@@ -259,10 +266,12 @@ async function readUsers(params: FindUsersParamsDto, user: LoginUserDto): Promis
     const usersDB = await findUsers(validatedParams, user.usemid);
     const usersResponse: FindUsersResponseDto = {
       ...usersDB,
-      items: usersDB.items.map((userItem): UserResponseDto => ({
-        ...userItem,
-        usimagen: toPublicImageUrl(userItem.usimagen),
-      })),
+      items: usersDB.items.map(
+        (userItem): UserResponseDto => ({
+          ...userItem,
+          usimagen: toPublicImageUrl(userItem.usimagen),
+        }),
+      ),
     };
 
     return usersResponse;
@@ -282,7 +291,10 @@ async function readUsers(params: FindUsersParamsDto, user: LoginUserDto): Promis
   }
 }
 
-async function readUser(userData: FindUserDto, user: LoginUserDto): Promise<UserResponseDto | null> {
+async function readUser(
+  userData: FindUserDto,
+  user: LoginUserDto,
+): Promise<UserResponseDto | null> {
   const validatedId = validateRequiredString(userData.usid, EMPTY_USER_ID_MESSAGE);
 
   try {
@@ -322,9 +334,16 @@ async function readUser(userData: FindUserDto, user: LoginUserDto): Promise<User
   }
 }
 
-async function updateUserWithStatus(userData: UpdateStatusUserDto, user: LoginUserDto): Promise<boolean> {
+async function updateUserWithStatus(
+  userData: UpdateStatusUserDto,
+  user: LoginUserDto,
+): Promise<boolean> {
   const usid = validateRequiredString(userData.usid, EMPTY_USER_ID_MESSAGE);
-  const usestado = validateStatus(userData.usestado, EMPTY_USER_STATUS_MESSAGE, INVALID_USER_UPDATE_STATUS_MESSAGE);
+  const usestado = validateStatus(
+    userData.usestado,
+    EMPTY_USER_STATUS_MESSAGE,
+    INVALID_USER_UPDATE_STATUS_MESSAGE,
+  );
 
   try {
     const access = {
@@ -339,7 +358,7 @@ async function updateUserWithStatus(userData: UpdateStatusUserDto, user: LoginUs
       usid,
       usemid: user.usemid,
     });
-    
+
     if (!targetUser) {
       return false;
     }
@@ -355,7 +374,6 @@ async function updateUserWithStatus(userData: UpdateStatusUserDto, user: LoginUs
     });
 
     return updated;
-
   } catch (error) {
     logger.error(
       {
@@ -371,23 +389,31 @@ async function updateUserWithStatus(userData: UpdateStatusUserDto, user: LoginUs
   }
 }
 
-async function updateUser(userData: UpdateUserDto, user: LoginUserDto): Promise<UserResponseDto | null> {
+async function updateUser(
+  userData: UpdateUserDto,
+  user: LoginUserDto,
+): Promise<UserResponseDto | null> {
   const usid = validateRequiredString(userData.usid, EMPTY_USER_ID_MESSAGE);
-  const usnombre = userData.usnombre !== undefined
-    ? validateName(userData.usnombre, EMPTY_NAME_MESSAGE, INVALID_NAME_MESSAGE)
-    : undefined;
-  const uscorreo = userData.uscorreo !== undefined
-    ? validateEmail(userData.uscorreo, EMPTY_EMAIL_MESSAGE, INVALID_EMAIL_MESSAGE)
-    : undefined;
-  const usimagen = userData.usimagen !== undefined
-    ? validateRequiredString(userData.usimagen, EMPTY_USER_IMAGE_MESSAGE)
-    : undefined;
-  const usestado = userData.usestado !== undefined
-    ? validateStatus(userData.usestado, EMPTY_USER_STATUS_MESSAGE, INVALID_USER_STATUS_MESSAGE)
-    : undefined;
-  const usrol = userData.usrol !== undefined
-    ? validateRole(userData.usrol, EMPTY_ROLE_MESSAGE, INVALID_ROLE_MESSAGE)
-    : undefined;
+  const usnombre =
+    userData.usnombre !== undefined
+      ? validateName(userData.usnombre, EMPTY_NAME_MESSAGE, INVALID_NAME_MESSAGE)
+      : undefined;
+  const uscorreo =
+    userData.uscorreo !== undefined
+      ? validateEmail(userData.uscorreo, EMPTY_EMAIL_MESSAGE, INVALID_EMAIL_MESSAGE)
+      : undefined;
+  const usimagen =
+    userData.usimagen !== undefined
+      ? validateRequiredString(userData.usimagen, EMPTY_USER_IMAGE_MESSAGE)
+      : undefined;
+  const usestado =
+    userData.usestado !== undefined
+      ? validateStatus(userData.usestado, EMPTY_USER_STATUS_MESSAGE, INVALID_USER_STATUS_MESSAGE)
+      : undefined;
+  const usrol =
+    userData.usrol !== undefined
+      ? validateRole(userData.usrol, EMPTY_ROLE_MESSAGE, INVALID_ROLE_MESSAGE)
+      : undefined;
 
   try {
     const access = {
@@ -500,9 +526,16 @@ async function updateUser(userData: UpdateUserDto, user: LoginUserDto): Promise<
   }
 }
 
-async function updateUserPassword(userData: UpdateUserPasswordDto, user: LoginUserDto): Promise<boolean> {
+async function updateUserPassword(
+  userData: UpdateUserPasswordDto,
+  user: LoginUserDto,
+): Promise<boolean> {
   const usid = validateRequiredString(userData.usid, EMPTY_USER_ID_MESSAGE);
-  const uspassword = validatePassword(userData.uspassword, EMPTY_PASSWORD_MESSAGE, INVALID_PASSWORD_MESSAGE);
+  const uspassword = validatePassword(
+    userData.uspassword,
+    EMPTY_PASSWORD_MESSAGE,
+    INVALID_PASSWORD_MESSAGE,
+  );
 
   try {
     const access = {
@@ -536,10 +569,10 @@ async function updateUserPassword(userData: UpdateUserPasswordDto, user: LoginUs
     }
 
     const passwordHash = await encryptPassword(uspassword);
-    const updatedUserDB = await updateUserById(
-      [{ column: 'uspassword', value: passwordHash }],
-      { usid, usemid: user.usemid },
-    );
+    const updatedUserDB = await updateUserById([{ column: 'uspassword', value: passwordHash }], {
+      usid,
+      usemid: user.usemid,
+    });
 
     return updatedUserDB !== null;
   } catch (error) {

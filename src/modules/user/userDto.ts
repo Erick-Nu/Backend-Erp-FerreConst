@@ -12,12 +12,12 @@ type CreateUserDto = {
 
 type FindUserDto = {
   usid: string;
-}
+};
 
 type UpdateStatusUserDto = {
   usid: string;
   usestado: Status;
-}
+};
 
 type UpdateUserDto = {
   usid: string;
@@ -26,12 +26,12 @@ type UpdateUserDto = {
   usimagen?: string;
   usestado?: Status;
   usrol?: Role;
-}
+};
 
 type UpdateUserPasswordDto = {
   usid: string;
   uspassword: string;
-}
+};
 
 type FindUsersParamsDto = {
   page: number;
@@ -48,7 +48,6 @@ type FindUsersResponseDto = {
   totalPages: number;
 };
 
-
 type UserResponseDto = {
   usid: string;
   usemid: string;
@@ -59,8 +58,7 @@ type UserResponseDto = {
   usrol: Role;
   usfchregistro: Date;
   usestado: Status;
-}
-
+};
 
 export type {
   CreateUserDto,
@@ -70,5 +68,5 @@ export type {
   UpdateUserPasswordDto,
   UpdateStatusUserDto,
   FindUsersParamsDto,
-  FindUsersResponseDto
+  FindUsersResponseDto,
 };

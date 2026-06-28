@@ -6,7 +6,7 @@ type CreateBranchDto = {
   sudireccion: string | null;
   sucorreo: string | null;
   suidentificador: string;
-}
+};
 
 type BranchResponseDto = {
   suid: string;
@@ -17,11 +17,11 @@ type BranchResponseDto = {
   suidentificador: string;
   sufchregistro: Date;
   suestado: Status;
-}
+};
 
 type FindBranchDto = {
   suid: string;
-}
+};
 
 type UpdateBranchDto = {
   suid: string;
@@ -30,7 +30,7 @@ type UpdateBranchDto = {
   sucorreo?: string | null;
   suidentificador?: string;
   suestado?: Status;
-}
+};
 
 type FindBranchesParamsDto = {
   page: number;
