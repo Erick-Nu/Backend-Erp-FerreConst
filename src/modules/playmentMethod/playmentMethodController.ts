@@ -12,7 +12,7 @@ import {
   readPlaymentMethods,
   updatePlaymentMethod,
 } from './playmentMethodService.js';
-import { isValidStatus } from '../../utils/validation.js';
+import { isValidFilterStatus } from '../../utils/validation.js';
 
 type UpdatePlaymentMethodRequestBody = Omit<UpdatePlaymentMethodDto, 'mpid'>;
 
@@ -50,7 +50,7 @@ const searchPlaymentMethods: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && !isValidFilterStatus(statusQuery)) {
       res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
@@ -67,7 +67,7 @@ const searchPlaymentMethods: RequestHandler = async (req, res, next) => {
       params.search = searchQuery;
     }
 
-    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && isValidFilterStatus(statusQuery)) {
       params.status = statusQuery;
     }
 

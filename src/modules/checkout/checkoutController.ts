@@ -7,7 +7,7 @@ import type {
   UpdateCheckoutDto,
 } from './checkoutDto.js';
 import { createCheckout, readCheckout, readCheckouts, updateCheckout } from './checkoutService.js';
-import { isValidStatus } from '../../utils/validation.js';
+import { isValidFilterStatus } from '../../utils/validation.js';
 
 type UpdateCheckoutRequestBody = Omit<UpdateCheckoutDto, 'cjid'>;
 
@@ -79,7 +79,7 @@ const searchCheckouts: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && !isValidFilterStatus(statusQuery)) {
       res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
@@ -96,7 +96,7 @@ const searchCheckouts: RequestHandler = async (req, res, next) => {
       params.search = searchQuery;
     }
 
-    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && isValidFilterStatus(statusQuery)) {
       params.status = statusQuery;
     }
 

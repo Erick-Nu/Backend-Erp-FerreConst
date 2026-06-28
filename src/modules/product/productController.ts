@@ -18,7 +18,7 @@ import {
   readProducts,
   updateProduct,
 } from './productService.js';
-import { isValidStatus } from '../../utils/validation.js';
+import { isValidFilterStatus } from '../../utils/validation.js';
 
 const PRODUCT_IMAGE_BASE_PATH = '/productos';
 const DEFAULT_PRODUCT_IMAGE_PUBLIC_PATH = '/uploads/productos/product.png';
@@ -94,7 +94,7 @@ const searchProducts: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && !isValidFilterStatus(statusQuery)) {
       res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
@@ -111,7 +111,7 @@ const searchProducts: RequestHandler = async (req, res, next) => {
       params.search = searchQuery;
     }
 
-    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && isValidFilterStatus(statusQuery)) {
       params.status = statusQuery;
     }
 

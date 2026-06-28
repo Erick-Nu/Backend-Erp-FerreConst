@@ -8,7 +8,7 @@ import {
 import type { LoginUserDto } from '../auth/authDto.js';
 import type { CreateCompanyDto, FindCompaniesParamsDto, UpdateCompanyDto } from './companyDto.js';
 import { createCompany, readCompanies, readCompany, updateCompany, updateCompanyWithStatus } from './companyService.js';
-import { isValidStatus } from '../../utils/validation.js';
+import { isValidFilterStatus } from '../../utils/validation.js';
 
 const COMPANY_IMAGE_BASE_PATH = '/empresas';
 const DEFAULT_COMPANY_IMAGE_PUBLIC_PATH = '/uploads/empresas/company.png';
@@ -62,7 +62,7 @@ const searchCompanies: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && !isValidFilterStatus(statusQuery)) {
       res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
@@ -79,7 +79,7 @@ const searchCompanies: RequestHandler = async (req, res, next) => {
       params.search = searchQuery;
     }
 
-    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && isValidFilterStatus(statusQuery)) {
       params.status = statusQuery;
     }
 

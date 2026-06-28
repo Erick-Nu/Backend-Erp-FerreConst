@@ -12,7 +12,7 @@ import {
   readMedidas,
   updateMedida,
 } from './medidaService.js';
-import { isValidStatus } from '../../utils/validation.js';
+import { isValidFilterStatus } from '../../utils/validation.js';
 
 type UpdateMedidaRequestBody = Omit<UpdateMedidaDto, 'mdiaid'>;
 
@@ -51,7 +51,7 @@ const searchMedidas: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && !isValidFilterStatus(statusQuery)) {
       res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
@@ -68,7 +68,7 @@ const searchMedidas: RequestHandler = async (req, res, next) => {
       params.search = searchQuery;
     }
 
-    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && isValidFilterStatus(statusQuery)) {
       params.status = statusQuery;
     }
 

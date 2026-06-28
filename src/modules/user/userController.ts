@@ -22,7 +22,7 @@ import {
   updateUserPassword,
   updateUserWithStatus,
 } from './userService.js';
-import { isValidStatus } from '../../utils/validation.js';
+import { isValidFilterStatus } from '../../utils/validation.js';
 
 const USER_IMAGE_BASE_PATH = '/usuarios';
 const DEFAULT_USER_IMAGE_PUBLIC_PATH = '/uploads/usuarios/user.png';
@@ -82,7 +82,7 @@ const searchUsers: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && !isValidFilterStatus(statusQuery)) {
       res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
@@ -99,7 +99,7 @@ const searchUsers: RequestHandler = async (req, res, next) => {
       params.search = searchQuery;
     }
 
-    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && isValidFilterStatus(statusQuery)) {
       params.status = statusQuery;
     }
 

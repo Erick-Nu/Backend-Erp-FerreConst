@@ -7,7 +7,7 @@ import type {
   UpdateBranchDto,
 } from './branchDto.js';
 import { createBranch, readBranch, readBranches, updateBranch } from './branchService.js';
-import { isValidStatus } from '../../utils/validation.js';
+import { isValidFilterStatus } from '../../utils/validation.js';
 
 type UpdateBranchRequestBody = Omit<UpdateBranchDto, 'suid'>;
 
@@ -48,7 +48,7 @@ const searchBranches: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && !isValidFilterStatus(statusQuery)) {
       res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
@@ -65,7 +65,7 @@ const searchBranches: RequestHandler = async (req, res, next) => {
       params.search = searchQuery;
     }
 
-    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && isValidFilterStatus(statusQuery)) {
       params.status = statusQuery;
     }
 

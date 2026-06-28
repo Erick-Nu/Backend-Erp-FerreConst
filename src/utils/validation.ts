@@ -16,7 +16,7 @@ const INVALID_NAME_MESSAGE = 'El nombre sólo debe contener letras y espacios';
 const INVALID_NUMBER_MESSAGE = 'El valor debe ser un número válido';
 const INVALID_PASSWORD_MESSAGE = 'La contraseña debe tener al menos 8 caracteres';
 const INVALID_ROLE_MESSAGE = 'El rol debe ser administrador, jefe o empleado';
-const INVALID_STATUS_MESSAGE = 'El estado debe ser activo o inactivo';
+const INVALID_STATUS_MESSAGE = 'El estado debe ser activo, inactivo o eliminado';
 const INVALID_RUC_MESSAGE = 'El RUC debe ser válido';
 const INVALID_TEXT_MESSAGE = 'El texto sólo debe contener letras y espacios';
 const INVALID_COMPANY_CODE_MESSAGE = 'El código de empresa debe tener exactamente 4 caracteres alfanuméricos';
@@ -27,7 +27,8 @@ const MIN_PASSWORD_LENGTH = 8;
 const EMPTY_ROLE_MESSAGE = 'El rol es requerido';
 const EMPTY_STATUS_MESSAGE = 'El estado es requerido';
 const ROLE_VALUES: Role[] = ['administrador', 'jefe', 'empleado'];
-const STATUS_VALUES: Status[] = ['activo', 'inactivo'];
+const STATUS_VALUES: Status[] = ['activo', 'inactivo', 'eliminado'];
+const FILTER_STATUS_VALUES: Status[] = ['activo', 'inactivo'];
 const PROFORMA_STATUS_VALUES: ProformaStatus[] = ['emitida', 'pagada', 'anulada'];
 
 function cleanString(value: string): string {
@@ -260,6 +261,10 @@ function isValidStatus(value: string): value is Status {
   return STATUS_VALUES.includes(value as Status);
 }
 
+function isValidFilterStatus(value: string): value is Status {
+  return FILTER_STATUS_VALUES.includes(value as Status);
+}
+
 function isValidProformaStatus(value: string): value is ProformaStatus {
   return PROFORMA_STATUS_VALUES.includes(value as ProformaStatus);
 }
@@ -283,6 +288,7 @@ export {
   validateRole,
   validateStatus,
   isValidStatus,
+  isValidFilterStatus,
   isValidProformaStatus,
   validateRuc,
   validateText,

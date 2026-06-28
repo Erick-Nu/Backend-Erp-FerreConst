@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 import type { LoginUserDto } from '../auth/authDto.js';
 import type { CreateBrandDto, FindBrandDto, FindBrandsParamsDto, UpdateBrandDto } from './brandDto.js';
 import { createBrand, readBrand, readBrands, updateBrand } from './brandService.js';
-import { isValidStatus } from '../../utils/validation.js';
+import { isValidFilterStatus } from '../../utils/validation.js';
 
 type UpdateBrandRequestBody = Omit<UpdateBrandDto, 'mrcid'>;
 
@@ -40,7 +40,7 @@ const searchBrands: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    if (typeof statusQuery === 'string' && !isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && !isValidFilterStatus(statusQuery)) {
       res.status(400).json({ message: 'El estado debe ser activo o inactivo' });
       return;
     }
@@ -57,7 +57,7 @@ const searchBrands: RequestHandler = async (req, res, next) => {
       params.search = searchQuery;
     }
 
-    if (typeof statusQuery === 'string' && isValidStatus(statusQuery)) {
+    if (typeof statusQuery === 'string' && isValidFilterStatus(statusQuery)) {
       params.status = statusQuery;
     }
 
